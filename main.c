@@ -163,13 +163,10 @@ static void stop_VSH_Menu(void)
 	sys_ppu_thread_join(drawing_tid, NULL);
 	
 	// free heap memory
-  destroy_heap();
-  
-  // restart vsh pad
-	start_stop_vsh_pad(1);
-	
+	destroy_heap();
+
 	// continue rsx rendering...
-  lv1_rsx_fifo_pause(0x55555555, 0); 
+	lv1_rsx_fifo_pause(0x55555555, 0); 
 }
 
 
@@ -267,12 +264,16 @@ static void vsh_menu_thread(uint64_t arg)
 					  start_stop_vsh_pad(0);
 					  
 					  // set menu_running and start drawing_thread
-            menu_running = 1;
-		        sys_ppu_thread_create(&drawing_tid, drawing_thread, 0, 3000, 0x1000, 1, "drawing_thread");
+					  menu_running = 1;
+					  sys_ppu_thread_create(&drawing_tid, drawing_thread, 0, 3000, 0x1000, 1, "drawing_thread");
 					  
 					  break;
 					case 1:                                      // VSH Menu is running, stop VSH Menu
 					  stop_VSH_Menu();
+					    
+					  // restart vsh pad
+					  start_stop_vsh_pad(1);
+	
 					  break;
 				}
 				

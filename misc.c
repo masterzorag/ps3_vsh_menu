@@ -122,7 +122,12 @@ int32_t lv1_rsx_fifo_pause(uint32_t rsx_ctx, uint8_t pause)
 	  op_code = 0x3ULL;         // continue rsx fifo
 	
 	// lv1_gpu_context_attribute()
-	system_call_8(10, (uint64_t)rsx_ctx, op_code, 0, 0, 0, 0, 0, (uint64_t)225);
+	// system_call_8(10, (uint64_t)rsx_ctx, op_code, 0, 0, 0, 0, 0, (uint64_t)225);
+	
+	// better, do the same with following
+	// lv2 sys_rsx_context_attribute()
+	system_call_6(0x2A2, (uint64_t)rsx_ctx, op_code, 0, 0, 0, 0);	
+	
 	uint64_t ret = p1;
 	return (int32_t)ret;
 }

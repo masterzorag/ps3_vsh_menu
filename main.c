@@ -166,7 +166,7 @@ static void stop_VSH_Menu(void)
 	destroy_heap();
 
 	// continue rsx rendering...
-	lv1_rsx_fifo_pause(0x55555555, 0); 
+	rsx_fifo_pause(0); 
 }
 
 
@@ -231,8 +231,6 @@ static void vsh_menu_thread(uint64_t arg)
 	
 	while(1)
 	{
-		//ps3_run_stat = vshmain_EB757101();  // get current ps3 running status
-		
 		// if VSH Menu is running, we get pad data over our MyPadGetData()
 		// else, we use the vsh pad_data struct
 		if(menu_running)            
@@ -308,17 +306,17 @@ static void vsh_menu_thread(uint64_t arg)
 		    
 		    if((curpad & PAD_CROSS) && (curpad != oldpad))
 		    {
-		      do_menu_action();
+		      	do_menu_action();
 		  	}
 		  	
 		  	// ...
 			}
 			
-		  oldpad = curpad;
+		  	oldpad = curpad;
 		}
 		else
 		{
-	    oldpad = 0;
+			oldpad = 0;
 		}
   }
 	

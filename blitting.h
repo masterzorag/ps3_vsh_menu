@@ -9,16 +9,21 @@
 
 // font constants
 #define PNG_FONT_PATH "/dev_usb000/font.png"  
-#define FONT_PNG_W    512                    // width of font png file in pixel
-#define FONT_PNG_H    514                    // height of font png file in pixel
-#define FONT_W        18         		         // font width in pixel
-#define FONT_H        22           	         // font height in pixel
+#define FONT_PNG_W    512                    	// width of font png file in pixel
+#define FONT_PNG_H    514                    	// height of font png file in pixel
+#define FONT_W        18         		// font width in pixel
+#define FONT_H        22           		// font height in pixel
 
 
 // canvas constants
-#define BASE          0xC0000000UL           // local memory base ea
-#define CANVAS_W      720       						 // canvas width in pixel
-#define CANVAS_H      400         					 // canvas height in pixel
+// the values for canvas width and height can be changed for make a smaller or larger
+// menu. They must be smaller than the max resulution of 1920*1080 and additional
+// code is necessary to manage the other possible resolutions.
+// Due to the fact that we read and write 64bit values(2 pixel) at once to the framebuffer,
+// CANVAS_W must be a multiple of 2.
+#define BASE          0xC0000000UL           	// local memory base ea
+#define CANVAS_W      720       		// canvas width in pixel
+#define CANVAS_H      400         		// canvas height in pixel
 
 
 // get pixel offset into framebuffer by x/y coordinates
@@ -32,9 +37,9 @@
 
 // graphic buffers
 typedef struct _Buffer{
-	uint32_t *addr;				        // buffer address
-	int32_t  w;                   // buffer width
-	int32_t  h;                   // buffer height
+	uint32_t *addr;			// buffer address
+	int32_t  w;                   	// buffer width
+	int32_t  h;                   	// buffer height
 } Buffer;
 
 

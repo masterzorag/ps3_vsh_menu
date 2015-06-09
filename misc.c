@@ -15,10 +15,10 @@ static void *vsh_pdata_addr = NULL;
 static uint32_t get_vsh_toc(void)
 {
 	uint32_t pm_start  = 0x10000UL;
-  uint32_t v0 = 0, v1 = 0, v2 = 0;
-  
-  while(pm_start < 0x700000UL)
-  {
+  	uint32_t v0 = 0, v1 = 0, v2 = 0;
+  	
+  	while(pm_start < 0x700000UL)
+  	{
 		v0 = *(uint32_t*)(pm_start+0x00);
 		v1 = *(uint32_t*)(pm_start+0x04);
 		v2 = *(uint32_t*)(pm_start+0x0C);
@@ -40,7 +40,7 @@ static uint32_t get_vsh_pad_obj(void)
 	uint32_t (*base)(uint32_t) = sys_io_3733EA3C;               // get pointer to cellPadGetData()
 	int16_t idx = *(uint32_t*)(*(uint32_t*)base) & 0x0000FFFF;  // get got_entry idx from first instruction,  
 	uint32_t got_entry = (idx + get_vsh_toc());                 // get got_entry of io_pad_object
-  return (*(uint32_t*)got_entry);                             // return io_pad_object address
+	return (*(uint32_t*)got_entry);                             // return io_pad_object address
 }
 
 /***********************************************************************
@@ -56,15 +56,15 @@ void VSHPadGetData(CellPadData *data)
 	if(!vsh_pdata_addr)        // first time, get address
 	{
 		while(pm_start < 0x700000UL)
-	  {
+	  	{
 			if((*(uint64_t*)pm_start == pat[0]) && (*(uint64_t*)(pm_start+8) == pat[1]))
-		  {
-		  	vsh_pdata_addr = (void*)((((*(uint32_t*)(pm_start + 0x234) & 0x0000FFFF) -1) <<16) |
-		  	                           (*(uint32_t*)(pm_start + 0x244) & 0x0000FFFF));
-			  break;
-		  }
+		  	{
+		  		vsh_pdata_addr = (void*)((((*(uint32_t*)(pm_start + 0x234) & 0x0000FFFF) -1) <<16) |
+		  		                     (*(uint32_t*)(pm_start + 0x244) & 0x0000FFFF));
+			  	break;
+		  	}
 		  
-		  pm_start+=4;
+		  	pm_start+=4;
 		}
 	}
 	
@@ -98,9 +98,9 @@ void start_stop_vsh_pad(uint8_t flag)
 ***********************************************************************/
 void MyPadGetData(int32_t port_no, CellPadData *data)
 {
-  uint32_t port = *(uint32_t*)(*(uint32_t*)(get_vsh_pad_obj() + 4) + 0x104 + port_no * 0xE8);
+  	uint32_t port = *(uint32_t*)(*(uint32_t*)(get_vsh_pad_obj() + 4) + 0x104 + port_no * 0xE8);
   
-  // sys_hid_manager_read()
+  	// sys_hid_manager_read()
 	system_call_4(0x1F6, (uint64_t)port, /*0x02*//*0x82*/0xFF, (uint64_t)(uint32_t)data+4, 0x80);
 	
 	data->len = (int32_t)p1;
@@ -109,30 +109,15 @@ void MyPadGetData(int32_t port_no, CellPadData *data)
 /***********************************************************************
 * pause/continue rsx fifo
 * 
-* uint32_t rsx_ctx = rsx context, e.g. 0x55555555 (VSH)
 * uint8_t pause    = pause fifo (1), continue fifo (0)
 ***********************************************************************/
-int32_t lv1_rsx_fifo_pause(uint32_t rsx_ctx, uint8_t pause)
+int32_t rsx_fifo_pause(uint8_t pause)
 {
-	uint64_t op_code;
-	
-	if(pause)
-	  op_code = 0x2ULL;         // pause rsx fifo
-	else
-	  op_code = 0x3ULL;         // continue rsx fifo
-	
-	// lv1_gpu_context_attribute()
-	// system_call_8(10, (uint64_t)rsx_ctx, op_code, 0, 0, 0, 0, 0, (uint64_t)225);
-	
-	// better, do the same with following
 	// lv2 sys_rsx_context_attribute()
-	system_call_6(0x2A2, (uint64_t)rsx_ctx, op_code, 0, 0, 0, 0);	
+	system_call_6(0x2A2, 0x55555555ULL, (uint64_t)(pause ? 2 : 3), 0, 0, 0, 0);
 	
-	uint64_t ret = p1;
-	return (int32_t)ret;
+	return (int32_t)p1;
 }
-
-
 
 /***********************************************************************
 * play a rco sound file

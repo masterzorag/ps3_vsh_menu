@@ -25,10 +25,10 @@ static int32_t h = 0, w = 0, canvas_x = 0, canvas_y = 0;
 void pause_RSX_rendering()
 {
 	{ // is a flip occurred ? (the moment RSX has finished the rendering of a new frame and flip him on screen)
-    while(1)
+	while(1)
 		  if(*(uint32_t*)0x60201100 == 0x80000000)
 			  break;
-		lv1_rsx_fifo_pause(0x55555555, 1);       // pause rsx fifo (no new frames...)
+	rsx_fifo_pause(1);       // pause rsx fifo (no new frames...)
   }
 }
 
@@ -53,12 +53,12 @@ void init_graphic()
 {
   memset(&ctx, 0, sizeof(DrawCtx));
 	
-	// alloc VSH Menu graphic buffers
-	buf[0].addr = mem_alloc(MB(2));       // canvas buffer
-	buf[1].addr = mem_alloc(MB(2));       // background buffer
+	// alloc VSH Menu graphic buffers, generic based on canvas constants
+	buf[0].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // canvas buffer
+	buf[1].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // background buffer
 	
 	// load font png
-	Buffer font = load_png("/dev_usb000/font.png");
+	Buffer font = load_png(PNG_FONT_PATH);
 	
 	// set drawing context
 	ctx.canvas   = buf[0].addr;
@@ -68,17 +68,17 @@ void init_graphic()
 	ctx.fg_color = 0xFFFFFFFF;            // white, opaque
 	
 	// get current display values
-  offset = *(uint32_t*)0x60201104;      // start offset of current framebuffer
-  getDisplayPitch(&pitch, &unk1);       // framebuffer pitch size
-  h = getDisplayHeight();               // display height
-  w = getDisplayWidth();                // display width
+  	offset = *(uint32_t*)0x60201104;      // start offset of current framebuffer
+  	getDisplayPitch(&pitch, &unk1);       // framebuffer pitch size
+  	h = getDisplayHeight();               // display height
+  	w = getDisplayWidth();                // display width
 	
-  // get x/y start coordinates for our canvas
-  canvas_x = (w - CANVAS_W) / 2;
-  canvas_y = (h - CANVAS_H) / 2;
+  	// get x/y start coordinates for our canvas, always center
+  	canvas_x = (w - CANVAS_W) / 2;
+  	canvas_y = (h - CANVAS_H) / 2;
 	
 	// dump background, for alpha blending
-  dump_bg();
+  	dump_bg();
 }
 
 /***********************************************************************
@@ -90,7 +90,7 @@ void init_graphic()
 int32_t load_png_bitmap(int32_t idx, const char *path)
 {
 	if(idx > PNG_MAX) return -1;
-  ctx.png[idx] = load_png(path);
+  	ctx.png[idx] = load_png(path);
 	return 0;
 }
 
@@ -102,15 +102,15 @@ int32_t load_png_bitmap(int32_t idx, const char *path)
 ***********************************************************************/
 static uint32_t mix_color(uint32_t bg, uint32_t fg)
 {
-  uint32_t a = fg >>24;
-  
-  if(a == 0) return bg;
-   
-  uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
-  uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
-  fg = a + ((bg >>24) * (255 - a) / 255);
-  
-  return (fg <<24) | ((rb | g) >>8);
+  	uint32_t a = fg >>24;
+  	
+  	if(a == 0) return bg;
+	 
+  	uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
+  	uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
+  	fg = a + ((bg >>24) * (255 - a) / 255);
+  	
+  	return (fg <<24) | ((rb | g) >>8);
 }
 
 
@@ -122,9 +122,9 @@ void flip_frame()
 	int32_t i, k;
 	uint64_t *canvas = (uint64_t*)ctx.canvas;
 	
-  for(i = 0; i < CANVAS_H; i++)
+  	for(i = 0; i < CANVAS_H; i++)
 		for(k = 0; k < CANVAS_W/2; k++)
-		  *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W/2];
+		  	*(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W/2];
 }
 
 /***********************************************************************
@@ -231,6 +231,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 /***********************************************************************
 * draw png part into frame.
 *
+* int32_t idx      =  index of loaded png
 * int32_t can_x    =  start x coordinate into canvas
 * int32_t can_y    =  start y coordinate into canvas
 * int32_t png_x    =  start x coordinate into png
@@ -297,9 +298,9 @@ void screenshot(uint8_t mode)
 	// create bmp file
 	fd = fopen(path, "wb");
 	
-  for(i = 0; i < h; i++)
-	  for(k = 0; k < w/2; k++)
-	  {
+  	for(i = 0; i < h; i++)
+	  	for(k = 0; k < w/2; k++)
+	  	{
 			dump_buf[k + i * w/2] = *(uint64_t*)(OFFSET(k*2, i));
 			
 			if(mode == 0)
@@ -342,8 +343,8 @@ void screenshot(uint8_t mode)
 	
 	// padding
 	int32_t rest = (w*3) % 4;
-  if(rest)
-    pad = 4 - rest;
+  	if(rest)
+		 pad = 4 - rest;
 	fseek(fd, pad, SEEK_CUR);
 	
 	fclose(fd);

@@ -43,7 +43,7 @@
 void VSHPadGetData(CellPadData *data);
 void start_stop_vsh_pad(uint8_t flag);
 void MyPadGetData(int32_t port_no, CellPadData *data);
-int32_t lv1_rsx_fifo_pause(uint32_t rsx_ctx, uint8_t pause);
+int32_t rsx_fifo_pause(uint8_t pause);
 
 void play_rco_sound(const char *plugin, const char *sound);
 void buzzer(uint8_t mode);

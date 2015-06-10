@@ -9,6 +9,7 @@
 #include <sys/sys_time.h>
 #include <sys/timer.h>
 #include <cell/pad.h>
+#include <cell/cell_fs.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -165,7 +166,7 @@ static void stop_VSH_Menu(void)
 	// free heap memory
 	destroy_heap();
 
-	// continue rsx rendering...
+	// continue rsx rendering
 	rsx_fifo_pause(0); 
 }
 
@@ -198,11 +199,13 @@ static void do_menu_action(void)
 	    break;
 	  case 5:                  // "Menu Entry 6: Reset PS3"
 	    stop_VSH_Menu();       // stop VSH Menu and... 
+	    delete_turnoff_flag();	    
 	    sys_timer_sleep(1);    // a short sleep, or unproper shutdown
 	    vshmain_87BB0001(2);
 	    break;
 	  case 6:                  // "Menu Entry 7: Shutdown PS3"
 	    stop_VSH_Menu();
+	    delete_turnoff_flag();
 	    sys_timer_sleep(1);
 	    vshmain_87BB0001(1);
 	    break;
@@ -225,9 +228,10 @@ static void vsh_menu_thread(uint64_t arg)
 	uint32_t oldpad = 0, curpad = 0;
 	CellPadData pdata;
 	
+	// wait for XMB, feedback
 	sys_timer_sleep(13);
 	vshtask_notify("sprx running...");
-	
+	buzzer(1);	
 	
 	while(1)
 	{

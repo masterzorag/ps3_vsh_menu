@@ -120,6 +120,15 @@ int32_t rsx_fifo_pause(uint8_t pause)
 }
 
 /***********************************************************************
+* 
+***********************************************************************/
+void delete_turnoff_flag()
+{
+    unlink((char*)"/dev_hdd0/tmp/turnoff");
+}
+
+
+/***********************************************************************
 * play a rco sound file
 * 
 * const char *plugin = plugin name own the rco file we would play a sound from

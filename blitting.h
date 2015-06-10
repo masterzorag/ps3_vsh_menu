@@ -8,7 +8,7 @@
 
 
 // font constants
-#define PNG_FONT_PATH "/dev_usb000/font.png"  
+#define PNG_FONT_PATH "/dev_hdd0/font.png"  
 #define FONT_PNG_W    512                    	// width of font png file in pixel
 #define FONT_PNG_H    514                    	// height of font png file in pixel
 #define FONT_W        18         		// font width in pixel

@@ -298,6 +298,7 @@ void screenshot(uint8_t mode)
 	// create bmp file
 	fd = fopen(path, "wb");
 	
+	// dump framebuffer (restore if needed)
   	for(i = 0; i < h; i++)
 	  	for(k = 0; k < w/2; k++)
 	  	{

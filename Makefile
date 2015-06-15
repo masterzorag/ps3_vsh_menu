@@ -32,6 +32,8 @@ PPU_CFLAGS += -Os -ffunction-sections -fdata-sections \
               -fno-builtin-printf -nodefaultlibs -std=gnu99 \
               -Wno-shadow -Wno-unused-parameter
 
+#PPU_CFLAGS += -DUSE_PNG_FONT
+
 CLEANFILES = ./$(PPU_SPRX_TARGET)
 
 all:

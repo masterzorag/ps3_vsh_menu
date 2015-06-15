@@ -3,16 +3,14 @@
 #include "network.h"            // debug
 
 
-
 static void *vsh_pdata_addr = NULL;
-
 
 
 /***********************************************************************
 * search and return vsh_process toc
 * Not the best way, but it work, it's generic and it is fast enough...
 ***********************************************************************/
-static uint32_t get_vsh_toc(void)
+uint32_t get_vsh_toc(void)
 {
 	uint32_t pm_start  = 0x10000UL;
   	uint32_t v0 = 0, v1 = 0, v2 = 0;

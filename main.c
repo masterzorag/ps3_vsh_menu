@@ -65,18 +65,33 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
 static int8_t menu_running = 0;		// vsh menu off(0) or on(1)
-static uint16_t line = 0;  			// current line into menu, init 0 (Menu Entry 1)
 
-#define MAX_MENU    7
-const char *entry_str[] = {
-	"Menu Entry 1: Make a single beep",
-	"Menu Entry 2: Make a double beep",
-	"Menu Entry 3: Play trophy sound",
-	"Menu Entry 4: Make screenshot",
-	"Menu Entry 5: Make screenshot with Menu",
-	"Menu Entry 6: Reset PS3",
-	"Menu Entry 7: Shutdown PS3"
-};
+static int16_t line = 0;   // current line into menu, init 0 (entry 1:)
+static int16_t view = 0;    // menu view, init 0 (main view)
+
+// max menu entries per view
+static int16_t max_menu[] = {9, 3, 5};
+
+// menu entry strings
+const char *entry_str[3][9] = {{"1: Make a single beep",
+	                              "2: Make a double beep",
+	                              "3: Enter second menu view",
+	                              "4: Enter third menu view",
+	                              "5: Play trophy sound",
+	                              "6: Make screenshot",
+	                              "7: Make screenshot with Menu",
+	                              "8: Reset PS3",
+	                              "9: Shutdown PS3"},
+	                              
+	                             {"1: Back to main view",
+													  		"2: test string...",
+														  	"3: test string..."},
+														   
+	                             {"1: Back to main view",
+														  	"2: test string...",
+															  "3: test string...",
+															  "4: test string...",
+														  	"5: test string..."}};
 
 
 
@@ -88,21 +103,32 @@ static void draw_frame(void)
 	int32_t i;
 
 	// all 32bit colors are ARGB, the framebuffer format
-	set_background_color(0x7F0000FF);     // blue, semitransparent
 	set_foreground_color(0xFFFFFFFF);     // white, opac
 	
-	// fill background with background color
+	// draw the right background color for current view
+	switch(view)
+	{
+		case 0:
+		  set_background_color(0x7F0000FF);     // blue, semitransparent
+		  break;
+		case 1:
+		  set_background_color(0x7FFF0000);     // red, semitransparent
+		  break;
+		case 2:
+		  set_background_color(0x7F00FF00);     // green, semitransparent
+		  break;
+	}
 	draw_background();
 	
 	// print headline string, coordinates in canvas = x(296 pixel), y(8 pixel)
 	print_text(293, 8, "PS3 VSH Menu");
 	
-	// print all menu entries, and the current selected entry in green
-	for(i = 0; i < MAX_MENU; i++)
+	// print all menu entries for view, and the current selected entry in green
+	for(i = 0; i < max_menu[view]; i++)
 	{
 		i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 		
-		print_text(8, 8 +(FONT_H * (i + 1)), entry_str[i]);
+		print_text(8, 8 +(FONT_H * (i + 1)), entry_str[view][i]);
 	}
 	
 	// ...
@@ -132,38 +158,85 @@ static void stop_VSH_Menu(void)
 ***********************************************************************/
 static void do_menu_action(void)
 {
-	switch(line)
+	switch(view)
 	{
-	  case 0:                  // "Menu Entry 1: Make a single beep"
-	    buzzer(1);
-	    break;
-	  case 1:                  // "Menu Entry 2: Make a double beep"
-	    buzzer(2);
-	    break;
-	  case 2:                  // "Menu Entry 3: Play trophy sound"
-	    play_rco_sound("system_plugin", "snd_trophy");
-	    break;
-	  case 3:                  // "Menu Entry 4: Make screenshot"
-	    screenshot(0);         // xmb only
-	    play_rco_sound("system_plugin", "snd_system_ok");
-	    break;
-	   case 4:                  // "Menu Entry 5: Make screenshot"
-	    screenshot(1);          // xmb + menu
-	    play_rco_sound("system_plugin", "snd_system_ok");
-	    break;
-	  case 5:                  // "Menu Entry 6: Reset PS3"
-	    stop_VSH_Menu();       // stop VSH Menu and... 
-	    delete_turnoff_flag();	    
-	    sys_timer_sleep(1);    // a short sleep, or unproper shutdown
-	    vshmain_87BB0001(2);
-	    break;
-	  case 6:                  // "Menu Entry 7: Shutdown PS3"
-	    stop_VSH_Menu();
-	    delete_turnoff_flag();
-	    sys_timer_sleep(1);
-	    vshmain_87BB0001(1);
-	    break;
-  }
+		case 0:                      // main menu view 
+		  switch(line)
+	    {
+	      case 0:                  // "1: Make a single beep"
+	        buzzer(1);
+	        break;
+	      case 1:                  // "2: Make a double beep"
+	        buzzer(2);
+	        break;
+	      case 2:                  // "3: Enter second menu view"
+	        view = 1;              // change menu view
+	        line = 0;              // on start entry
+	        break;
+	      case 3:                  // "4: Enter third menu view"
+	        view = 2;              // change menu view
+	        line = 0;              // on start entry
+	        break;
+	      case 4:                  // "5: Play trophy sound"
+	        play_rco_sound("system_plugin", "snd_trophy");
+	        break;
+	      case 5:                  // "6: Make screenshot"
+	        screenshot(0);         // xmb only
+	        play_rco_sound("system_plugin", "snd_system_ok");
+	        break;
+	      case 6:                  // "7: Make screenshot with menu"
+	        screenshot(1);         //
+	        play_rco_sound("system_plugin", "snd_system_ok");
+	        break;
+	      case 7:                  // "8: Reset PS3"
+	        stop_VSH_Menu();
+	        delete_turnoff_flag();
+	        sys_timer_sleep(1);
+	        vshmain_87BB0001(2);
+	        break;
+	      case 8:                  // "9: Shutdown PS3"
+	        stop_VSH_Menu();
+	        delete_turnoff_flag();
+	        sys_timer_sleep(1);
+	        vshmain_87BB0001(1);
+	        break;
+      }
+		  break;
+		case 1:                      // second menu view
+		  switch(line)
+	    {
+	      case 0:                  // "1: Back to main view"
+	        view = line = 0;
+	        break;
+	      case 1:                  // "2: test string..."
+	        //...
+	        break;
+	      case 2:                  // "3: test string..."
+	        //...
+	        break;
+		  }
+		  break;
+		case 2:                      // third menu view
+		  switch(line)
+	    {
+	      case 0:                  // "1: Back to main view"
+	        view = line = 0;
+	        break;
+	      case 1:                  // "2: test string..."
+	        //...
+	        break;
+	      case 2:                  // "3: test string..."
+	        //...
+	        break;
+	      case 3:                  // "4: test string..."
+	        //...
+	        break;
+	      case 4:                  // "5: test string..."
+	        //...
+	        break;
+		  }
+		  break;
+	}
 }
 
 
@@ -204,6 +277,7 @@ static void vsh_menu_thread(uint64_t arg)
 				switch(menu_running)
 				{
 					case 0:                                      // VSH Menu not running, start VSH Menu
+					  view = line = 0;                           // main view and start on first entry  
 					  
 					  // 
 					  pause_RSX_rendering();
@@ -255,8 +329,8 @@ static void vsh_menu_thread(uint64_t arg)
 			    
 			   if((curpad & PAD_DOWN) && (curpad != oldpad))
 			   {
-			   	if(line >= MAX_MENU-1)
-			      	line = MAX_MENU-1;
+		      if(line >= max_menu[view]-1)
+		        line = max_menu[view]-1;
 					else
 				  	{
 				  	  line++;

@@ -57,13 +57,15 @@ void init_graphic()
 	buf[0].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // canvas buffer
 	buf[1].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // background buffer
 	
+	#ifdef USE_PNG_FONT
 	// load font png
-	Buffer font = load_png(PNG_FONT_PATH);
+	Buffer font  = load_png(PNG_FONT_PATH);
+	ctx.font     = font.addr;
+	#endif
 	
 	// set drawing context
 	ctx.canvas   = buf[0].addr;
 	ctx.bg       = buf[1].addr;
-	ctx.font     = font.addr;
 	ctx.bg_color = 0xFF000000;            // black, opaque
 	ctx.fg_color = 0xFFFFFFFF;            // white, opaque
 	
@@ -164,6 +166,7 @@ void draw_background()
 	}
 }
 
+#ifdef USE_PNG_FONT
 /***********************************************************************
 * print text,
 * 
@@ -177,7 +180,6 @@ void print_text(int32_t x, int32_t y, const char *str)
 	int32_t i = 0, char_w = 0, p_x = 0, p_y = 0;
 	int32_t tmp_x = 0, tmp_y = 0;
 	uint8_t c = 0;
-	
 	
 	while(*str != '\0')
 	{
@@ -225,7 +227,59 @@ void print_text(int32_t x, int32_t y, const char *str)
 		str++;
 	}
 }
+#else
 
+
+/***********************************************************************
+* print text, with xbm_font
+* 
+* int32_t x       = start x coordinate into canvas
+* int32_t y       = start y coordinate into canvas
+* const char *str = string to print
+***********************************************************************/
+#include "xbm_font.h"
+void print_text(int32_t x, int32_t y, const char *str)
+{
+	short i, j;
+	int tx = 0,	ty = 0;
+	char c;
+
+	while(*str != '\0'){
+		c = *str;
+		if(c < LOWER_ASCII_CODE || c > UPPER_ASCII_CODE) c = 180;
+
+		char *bit = xbmFont[c - LOWER_ASCII_CODE];
+		
+		// dump bits map: bytes_per_line 2, size 32 char of 8 bit
+		for(i = 0; i < ((FONT_W * FONT_H) / BITS_IN_BYTE); i++) {
+			for(j = 0; j < BITS_IN_BYTE; j++)
+			{
+				// least significant bit first
+				if(bit[i] & (1 << j))
+				{
+					// paint FG pixel
+					ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.fg_color;
+				}
+				else
+				{
+					// paint BG pixel (or trasparency)
+					//ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.bg_color;
+				}
+			}
+			tx++;
+	  		if(tx == (FONT_W / BITS_IN_BYTE)) {
+	  			ty++;		// use to decrease gradient
+	  			tx = 0;
+			}
+		}
+		ty = 0;
+		
+		// glyph painted, move one char right in text
+		x += FONT_W;
+		++str;
+	}
+}
+#endif
 
 
 /***********************************************************************

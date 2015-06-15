@@ -6,14 +6,18 @@
 #include <string.h>
 #include <stdarg.h>
 
-
 // font constants
 #define PNG_FONT_PATH "/dev_hdd0/font.png"  
 #define FONT_PNG_W    512                    	// width of font png file in pixel
 #define FONT_PNG_H    514                    	// height of font png file in pixel
+
+#ifdef USE_PNG_FONT							// use external font.png
 #define FONT_W        18         		// font width in pixel
 #define FONT_H        22           		// font height in pixel
-
+#else
+#define FONT_W        16					// use hardcoded xbm_font
+#define FONT_H        16
+#endif
 
 // canvas constants
 // the values for canvas width and height can be changed for make a smaller or larger
@@ -63,6 +67,7 @@ void set_background_color(uint32_t color);
 void set_foreground_color(uint32_t color);
 void draw_background(void);
 void print_text(int32_t x, int32_t y, const char *str);
+void xbm_print(int x, const int y, const char *str);
 void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h);
 
 void screenshot(uint8_t mode);

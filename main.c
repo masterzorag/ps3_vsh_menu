@@ -1,5 +1,6 @@
 #include <sys/prx.h>
 #include <sys/ppu_thread.h>
+#include <sys/event.h>
 #include <sys/process.h>
 #include <sys/event.h>
 #include <sys/syscall.h>
@@ -28,16 +29,12 @@
 #include "blitting.h"
 
 
-
-
 SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
 SYS_MODULE_STOP(vsh_menu_stop);
 
-#define THREAD_NAME 				"vsh_menu_thread"
-#define STOP_THREAD_NAME 		"vsh_menu_stop_thread"
-
-
+#define THREAD_NAME			"vsh_menu_thread"
+#define STOP_THREAD_NAME	"vsh_menu_stop_thread"
 
 static sys_ppu_thread_t vsh_menu_tid = -1;
 static int32_t done = 0;
@@ -54,6 +51,7 @@ static inline void _sys_ppu_thread_exit(uint64_t val)
 	system_call_1(41, val);
 }
 
+
 /***********************************************************************
 * 
 ***********************************************************************/
@@ -64,28 +62,21 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 }
 
 
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
-static uint8_t menu_running = 0;           // vsh menu off(0) or on(1)
-static sys_ppu_thread_t drawing_tid = -1;
+static int8_t menu_running = 0;		// vsh menu off(0) or on(1)
+static uint16_t line = 0;  			// current line into menu, init 0 (Menu Entry 1)
 
-
-static uint16_t line = 0;  // current line into menu, init 0 (Menu Entry 1)
 #define MAX_MENU    7
-
-const char *entry_str[] = {"Menu Entry 1: Make a single beep",
-	                         "Menu Entry 2: Make a double beep",
-	                         "Menu Entry 3: Play trophy sound",
-	                         "Menu Entry 4: Make screenshot",
-	                         "Menu Entry 5: Make screenshot with Menu",
-	                         "Menu Entry 6: Reset PS3",
-	                         "Menu Entry 7: Shutdown PS3"};
-
+const char *entry_str[] = {
+	"Menu Entry 1: Make a single beep",
+	"Menu Entry 2: Make a double beep",
+	"Menu Entry 3: Play trophy sound",
+	"Menu Entry 4: Make screenshot",
+	"Menu Entry 5: Make screenshot with Menu",
+	"Menu Entry 6: Reset PS3",
+	"Menu Entry 7: Shutdown PS3"
+};
 
 
 
@@ -95,8 +86,7 @@ const char *entry_str[] = {"Menu Entry 1: Make a single beep",
 static void draw_frame(void)
 {
 	int32_t i;
-	
-	
+
 	// all 32bit colors are ARGB, the framebuffer format
 	set_background_color(0x7F0000FF);     // blue, semitransparent
 	set_foreground_color(0xFFFFFFFF);     // white, opac
@@ -110,47 +100,13 @@ static void draw_frame(void)
 	// print all menu entries, and the current selected entry in green
 	for(i = 0; i < MAX_MENU; i++)
 	{
-		if(line == i)
-			set_foreground_color(0xFF00FF00);    // green text, selected
-		else
-			set_foreground_color(0xFFFFFFFF);    // white text, normal
+		i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 		
-	  print_text(8, 8 +(FONT_H * (i + 1)), entry_str[i]);
+		print_text(8, 8 +(FONT_H * (i + 1)), entry_str[i]);
 	}
 	
 	// ...
 }
-
-
-/***********************************************************************
-* drawing thread
-***********************************************************************/
-static void drawing_thread(uint64_t arg)
-{
-	while(menu_running == 1)
-	{
-		draw_frame();
-		
-		flip_frame();
-		
-		sys_timer_usleep(30);
-		
-		if(menu_running == 0)
-		{
-			sys_ppu_thread_exit(0);
-		}
-		else
-		{
-			continue;
-		}
-	}
-}
-
-
-
-
-
-
 
 
 
@@ -159,9 +115,8 @@ static void drawing_thread(uint64_t arg)
 ***********************************************************************/
 static void stop_VSH_Menu(void)
 {
-	// unset menu_running and stop drawing_thread
+	// menu off
 	menu_running = 0;
-	sys_ppu_thread_join(drawing_tid, NULL);
 	
 	// free heap memory
 	destroy_heap();
@@ -169,7 +124,6 @@ static void stop_VSH_Menu(void)
 	// continue rsx rendering
 	rsx_fifo_pause(0); 
 }
-
 
 
 
@@ -214,9 +168,6 @@ static void do_menu_action(void)
 
 
 
-
-
-
 /***********************************************************************
 * plugin main ppu thread
 ***********************************************************************/
@@ -231,6 +182,7 @@ static void vsh_menu_thread(uint64_t arg)
 	// wait for XMB, feedback
 	sys_timer_sleep(13);
 	vshtask_notify("sprx running...");
+	
 	buzzer(1);	
 	
 	while(1)
@@ -248,7 +200,7 @@ static void vsh_menu_thread(uint64_t arg)
 			curpad = (pdata.button[2] | (pdata.button[3] << 8));
 			
 			if((curpad & PAD_SELECT) && (curpad != oldpad))
-		  {
+			{
 				switch(menu_running)
 				{
 					case 0:                                      // VSH Menu not running, start VSH Menu
@@ -257,7 +209,7 @@ static void vsh_menu_thread(uint64_t arg)
 					  pause_RSX_rendering();
 					  
 					  // create VSH Menu heap memory from memory container 1("app")
-					  create_heap(32);       // 32 MB
+					  create_heap(64);       // 64 MB
 					  
 					  // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
 					  init_graphic();
@@ -265,9 +217,8 @@ static void vsh_menu_thread(uint64_t arg)
 					  // stop vsh pad
 					  start_stop_vsh_pad(0);
 					  
-					  // set menu_running and start drawing_thread
+					  // set menu_running
 					  menu_running = 1;
-					  sys_ppu_thread_create(&drawing_tid, drawing_thread, 0, 3000, 0x1000, 1, "drawing_thread");
 					  
 					  break;
 					case 1:                                      // VSH Menu is running, stop VSH Menu
@@ -283,50 +234,55 @@ static void vsh_menu_thread(uint64_t arg)
 				sys_timer_usleep(300000);
 		  }
 		  
-		  // only if VSH Menu is running
+		  
+		  // VSH Menu is running, draw menu / check pad
 		  if(menu_running)
 		  {
-		    if((curpad & PAD_UP) && (curpad != oldpad))
-		    {
-		      if(line <= 0)
-		        line = 0;
-			  	else
-			  	{
-			  	  line--;
-			  	  play_rco_sound("system_plugin", "snd_cursor");
-					}
-		  	}
-		    
-		    if((curpad & PAD_DOWN) && (curpad != oldpad))
-		    {
-		      if(line >= MAX_MENU-1)
-		        line = MAX_MENU-1;
-			  	else
-			  	{
-			  	  line++;
-			  	  play_rco_sound("system_plugin", "snd_cursor");
-					}
-		  	}
-		    
-		    if((curpad & PAD_CROSS) && (curpad != oldpad))
-		    {
-		      	do_menu_action();
-		  	}
-		  	
-		  	// ...
-			}
+				draw_frame();
 			
-		  	oldpad = curpad;
+			   flip_frame();
+			    
+			   if((curpad & PAD_UP) && (curpad != oldpad))
+			   {
+					if(line <= 0)
+			        line = 0;
+				  	else
+				  	{
+				  	  line--;
+				  	  play_rco_sound("system_plugin", "snd_cursor");
+					}
+				}
+			    
+			   if((curpad & PAD_DOWN) && (curpad != oldpad))
+			   {
+			   	if(line >= MAX_MENU-1)
+			      	line = MAX_MENU-1;
+					else
+				  	{
+				  	  line++;
+				  	  play_rco_sound("system_plugin", "snd_cursor");
+					}
+				}
+			    
+				if((curpad & PAD_CROSS) && (curpad != oldpad))
+					do_menu_action();
+
+		  		// ...
+
+		  		sys_timer_usleep(30);
+			}
+	  		oldpad = curpad;
 		}
 		else
 		{
 			oldpad = 0;
 		}
-  }
+	}
 	
 	dbg_fini();
 	sys_ppu_thread_exit(0);
 }
+
 
 /***********************************************************************
 * start thread
@@ -339,8 +295,9 @@ int32_t vsh_menu_start(uint64_t arg)
 	return SYS_PRX_RESIDENT;
 }
 
+
 /***********************************************************************
-* stopt thread
+* stop thread
 ***********************************************************************/
 static void vsh_menu_stop_thread(uint64_t arg)
 {
@@ -354,6 +311,7 @@ static void vsh_menu_stop_thread(uint64_t arg)
 	
 	sys_ppu_thread_exit(0);
 }
+
 
 /***********************************************************************
 * 
@@ -370,6 +328,7 @@ static void finalize_module(void)
 	
 	system_call_3(482, prx, 0, (uint64_t)(uint32_t)meminfo);		
 }
+
 
 /***********************************************************************
 * 

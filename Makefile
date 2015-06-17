@@ -12,7 +12,7 @@ PPU_SRCS = network.c mem.c misc.c png_dec.c blitting.c main.c
 PPU_INCDIRS	= -I ./inc
 PPU_PRX_TARGET = ps3_vsh_menu.prx
 #PPU_PRX_LDFLAGS = -L ./lib -Wl, --strip-unused-data
-PPU_PRX_LDFLAGS = -L ./lib
+PPU_PRX_LDFLAGS = -L ./lib --gc-sections --as-needed
 PPU_PRX_STRIP_FLAGS = -s
 
 PPU_PRX_LDLIBS 	+= -lfs_stub -lnet_stub -lrtc_stub \
@@ -33,6 +33,7 @@ PPU_CFLAGS += -Os -ffunction-sections -fdata-sections \
               -Wno-shadow -Wno-unused-parameter
 
 #PPU_CFLAGS += -DUSE_PNG_FONT
+PPU_CFLAGS += -DHAVE_STARFIELD
 
 CLEANFILES = ./$(PPU_SPRX_TARGET)
 

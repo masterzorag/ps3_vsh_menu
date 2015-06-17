@@ -28,7 +28,6 @@
 #include "mem.h"
 #include "blitting.h"
 
-
 SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
 SYS_MODULE_STOP(vsh_menu_stop);
@@ -66,32 +65,38 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 // BLITTING
 static int8_t menu_running = 0;		// vsh menu off(0) or on(1)
 
-static int16_t line = 0;   // current line into menu, init 0 (entry 1:)
-static int16_t view = 0;    // menu view, init 0 (main view)
+static int16_t line = 0;			// current line into menu, init 0 (entry 1:)
+static int16_t view = 0;			// menu view, init 0 (main view)
 
 // max menu entries per view
 static int16_t max_menu[] = {9, 3, 5};
 
 // menu entry strings
-const char *entry_str[3][9] = {{"1: Make a single beep",
-	                              "2: Make a double beep",
-	                              "3: Enter second menu view",
-	                              "4: Enter third menu view",
-	                              "5: Play trophy sound",
-	                              "6: Make screenshot",
-	                              "7: Make screenshot with Menu",
-	                              "8: Reset PS3",
-	                              "9: Shutdown PS3"},
-	                              
-	                             {"1: Back to main view",
-													  		"2: test string...",
-														  	"3: test string..."},
-														   
-	                             {"1: Back to main view",
-														  	"2: test string...",
-															  "3: test string...",
-															  "4: test string...",
-														  	"5: test string..."}};
+const char *entry_str[3][9] = {
+{
+	"1: Make a single beep",
+	"2: Make a double beep",
+	"3: Enter second menu view",
+	"4: Enter third menu view",
+	"5: Play trophy sound",
+	"6: Make screenshot",
+	"7: Make screenshot with Menu",
+	"8: Reset PS3",
+	"9: Shutdown PS3"
+},
+{
+	"1: Back to main view",
+	"2: test string...",
+	"3: test string..."
+},
+{
+	"1: Back to main view",
+	"2: test string...",
+	"3: test string...",
+	"4: test string...",
+	"5: test string..."
+}
+};
 
 
 
@@ -128,8 +133,12 @@ static void draw_frame(void)
 	{
 		i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 		
-		print_text(8, 8 +(FONT_H * (i + 1)), entry_str[view][i]);
+		print_text(4, 8 +(FONT_H * (i + 1)), entry_str[view][i]);
 	}
+	
+	#ifdef HAVE_STARFIELD
+	 move_star();
+	#endif
 	
 	// ...
 }
@@ -160,7 +169,7 @@ static void do_menu_action(void)
 {
 	switch(view)
 	{
-		case 0:                      // main menu view 
+		case 0:                    // main menu view 
 		  switch(line)
 	    {
 	      case 0:                  // "1: Make a single beep"
@@ -202,7 +211,7 @@ static void do_menu_action(void)
 	        break;
       }
 		  break;
-		case 1:                      // second menu view
+		case 1:                    // second menu view
 		  switch(line)
 	    {
 	      case 0:                  // "1: Back to main view"
@@ -216,7 +225,7 @@ static void do_menu_action(void)
 	        break;
 		  }
 		  break;
-		case 2:                      // third menu view
+		case 2:                    // third menu view
 		  switch(line)
 	    {
 	      case 0:                  // "1: Back to main view"
@@ -256,13 +265,17 @@ static void vsh_menu_thread(uint64_t arg)
 	sys_timer_sleep(13);
 	vshtask_notify("sprx running...");
 	
-	buzzer(1);	
+	play_rco_sound("system_plugin", "snd_trophy");
 	
+	#ifdef HAVE_STARFIELD
+	 init_once(/* stars */);
+	#endif
+		
 	while(1)
 	{
 		// if VSH Menu is running, we get pad data over our MyPadGetData()
 		// else, we use the vsh pad_data struct
-		if(menu_running)            
+		if(menu_running)
 		  MyPadGetData(0, &pdata);
 		else
 		  VSHPadGetData(&pdata);
@@ -276,57 +289,61 @@ static void vsh_menu_thread(uint64_t arg)
 			{
 				switch(menu_running)
 				{
-					case 0:                                      // VSH Menu not running, start VSH Menu
-					  view = line = 0;                           // main view and start on first entry  
-					  
+					// VSH Menu not running, start VSH Menu
+					case 0:
+					  // main view and start on first entry 
+					  view = line = 0;
+
 					  // 
 					  pause_RSX_rendering();
-					  
+
 					  // create VSH Menu heap memory from memory container 1("app")
 					  create_heap(64);       // 64 MB
-					  
+
 					  // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
 					  init_graphic();
-					  
+
 					  // stop vsh pad
 					  start_stop_vsh_pad(0);
-					  
+
 					  // set menu_running
 					  menu_running = 1;
-					  
+
 					  break;
-					case 1:                                      // VSH Menu is running, stop VSH Menu
+
+					// VSH Menu is running, stop VSH Menu
+					case 1:
 					  stop_VSH_Menu();
-					    
+
 					  // restart vsh pad
 					  start_stop_vsh_pad(1);
 	
 					  break;
 				}
-				
+
 				oldpad = 0;
 				sys_timer_usleep(300000);
 		  }
-		  
-		  
+
+
 		  // VSH Menu is running, draw menu / check pad
 		  if(menu_running)
 		  {
-				draw_frame();
-			
+			   draw_frame();
+
 			   flip_frame();
-			    
+
 			   if((curpad & PAD_UP) && (curpad != oldpad))
 			   {
 					if(line <= 0)
 			        line = 0;
-				  	else
-				  	{
-				  	  line--;
-				  	  play_rco_sound("system_plugin", "snd_cursor");
+					else
+					{
+					  line--;
+					  play_rco_sound("system_plugin", "snd_cursor");
 					}
 				}
-			    
+
 			   if((curpad & PAD_DOWN) && (curpad != oldpad))
 			   {
 		      if(line >= max_menu[view]-1)
@@ -337,7 +354,7 @@ static void vsh_menu_thread(uint64_t arg)
 				  	  play_rco_sound("system_plugin", "snd_cursor");
 					}
 				}
-			    
+
 				if((curpad & PAD_CROSS) && (curpad != oldpad))
 					do_menu_action();
 
@@ -364,8 +381,8 @@ static void vsh_menu_thread(uint64_t arg)
 int32_t vsh_menu_start(uint64_t arg)
 {
 	sys_ppu_thread_create(&vsh_menu_tid, vsh_menu_thread, 0, 3000, 0x4000, 1, THREAD_NAME);
-	
-	_sys_ppu_thread_exit(0);	
+
+	_sys_ppu_thread_exit(0);
 	return SYS_PRX_RESIDENT;
 }
 
@@ -393,14 +410,14 @@ static void vsh_menu_stop_thread(uint64_t arg)
 static void finalize_module(void)
 {
 	uint64_t meminfo[5];
-	
+
 	sys_prx_id_t prx = prx_get_module_id_by_address(finalize_module);
-	
+
 	meminfo[0] = 0x28;
 	meminfo[1] = 2;
 	meminfo[3] = 0;
-	
-	system_call_3(482, prx, 0, (uint64_t)(uint32_t)meminfo);		
+
+	system_call_3(482, prx, 0, (uint64_t)(uint32_t)meminfo);
 }
 
 
@@ -411,10 +428,10 @@ int vsh_menu_stop(void)
 {
 	sys_ppu_thread_t t;
 	uint64_t exit_code;
-	
+
 	sys_ppu_thread_create(&t, vsh_menu_stop_thread, 0, 0, 0x2000, 1, STOP_THREAD_NAME);
 	sys_ppu_thread_join(t, &exit_code);	
-	
+
 	finalize_module();
 	_sys_ppu_thread_exit(0);
 	return SYS_PRX_STOP_OK;

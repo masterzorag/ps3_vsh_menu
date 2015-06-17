@@ -7,15 +7,14 @@
 #include <stdarg.h>
 
 // font constants
-#define PNG_FONT_PATH "/dev_hdd0/font.png"  
-#define FONT_PNG_W    512                    	// width of font png file in pixel
-#define FONT_PNG_H    514                    	// height of font png file in pixel
-
-#ifdef USE_PNG_FONT							// use external font.png
-#define FONT_W        18         		// font width in pixel
-#define FONT_H        22           		// font height in pixel
+#ifdef USE_PNG_FONT
+#define PNG_FONT_PATH "/dev_hdd0/font.png"  // use external font.png
+#define FONT_PNG_W    512                   // width of font png file in pixel
+#define FONT_PNG_H    514                   // height of font png file in pixel
+#define FONT_W        18                    // font width in pixel
+#define FONT_H        22                    // font height in pixel
 #else
-#define FONT_W        16					// use hardcoded xbm_font
+#define FONT_W        16                    // use hardcoded xbm_font
 #define FONT_H        16
 #endif
 
@@ -25,9 +24,9 @@
 // code is necessary to manage the other possible resolutions.
 // Due to the fact that we read and write 64bit values(2 pixel) at once to the framebuffer,
 // CANVAS_W must be a multiple of 2.
-#define BASE          0xC0000000UL           	// local memory base ea
-#define CANVAS_W      720       		// canvas width in pixel
-#define CANVAS_H      400         		// canvas height in pixel
+#define BASE          0xC0000000UL      // local memory base ea
+#define CANVAS_W      720               // canvas width in pixel
+#define CANVAS_H      400               // canvas height in pixel
 
 
 // get pixel offset into framebuffer by x/y coordinates
@@ -36,14 +35,14 @@
                      ((int32_t)4)))) * ((int32_t)4))) + (BASE))
 
 
-#define PNG_MAX    4            // additional png bitmaps
+#define PNG_MAX    4      // additional png bitmaps
 
 
 // graphic buffers
 typedef struct _Buffer{
-	uint32_t *addr;			// buffer address
-	int32_t  w;                   	// buffer width
-	int32_t  h;                   	// buffer height
+	uint32_t *addr;         // buffer address
+	int32_t  w;             // buffer width
+	int32_t  h;             // buffer height
 } Buffer;
 
 
@@ -67,7 +66,6 @@ void set_background_color(uint32_t color);
 void set_foreground_color(uint32_t color);
 void draw_background(void);
 void print_text(int32_t x, int32_t y, const char *str);
-void xbm_print(int x, const int y, const char *str);
 void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h);
 
 void screenshot(uint8_t mode);
@@ -77,5 +75,17 @@ void screenshot(uint8_t mode);
 //void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 //void draw_circle(int32_t x_c, int32_t y_c, int32_t r);
 
+#ifdef HAVE_STARFIELD
+/* star struct */
+typedef struct _STAR{
+	float xpos, ypos;
+	short zpos, speed;
+	unsigned int color;
+} STAR;
 
-#endif // __BLITT_H__ 
+void init_star(STAR *star, int32_t i);
+void init_once(void);
+void move_star(void);
+#endif
+
+#endif // __BLITT_H__

@@ -81,6 +81,9 @@ void init_graphic()
 	
 	// dump background, for alpha blending
   	dump_bg();
+  	
+  	// init first frame with background dump
+        memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * 4);
 }
 
 /***********************************************************************
@@ -126,6 +129,9 @@ void flip_frame()
 	for(i = 0; i < CANVAS_H; i++)
 		for(k = 0; k < CANVAS_W/2; k++)
 			*(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W/2];
+			
+	// after flip, clear frame buffer with background
+        memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * 4);
 }
 
 /***********************************************************************

@@ -5,7 +5,6 @@
 #include <sys/event.h>
 #include <sys/syscall.h>
 #include <sys/memory.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/sys_time.h>
 #include <sys/timer.h>
@@ -17,26 +16,28 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
-#include <math.h>
+//#include <math.h>
 #include <time.h>
 
-#include <netinet/in.h>
-
 #include "inc/vsh_exports.h"
-#include "network.h"
 #include "misc.h"
 #include "mem.h"
 #include "blitting.h"
+
+//#include <sys/socket.h>
+//#include <netinet/in.h>
+#include "network.h"
+
 
 SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
 SYS_MODULE_STOP(vsh_menu_stop);
 
-#define THREAD_NAME			"vsh_menu_thread"
+#define THREAD_NAME				"vsh_menu_thread"
 #define STOP_THREAD_NAME	"vsh_menu_stop_thread"
 
 static sys_ppu_thread_t vsh_menu_tid = -1;
-static int32_t done = 0;
+static int8_t done = 0;
 int32_t vsh_menu_start(uint64_t arg);
 int32_t vsh_menu_stop(void);
 
@@ -63,13 +64,12 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
-static int8_t menu_running = 0;		// vsh menu off(0) or on(1)
-
-static int16_t line = 0;			// current line into menu, init 0 (entry 1:)
-static int16_t view = 0;			// menu view, init 0 (main view)
+static int8_t menu_running = 0;	// vsh menu off(0) or on(1)
+static int8_t line = 0;					// current line into menu, init 0 (entry 1:)
+static int8_t view = 0;					// menu view, init 0 (main view)
 
 // max menu entries per view
-static int16_t max_menu[] = {9, 3, 5};
+static int8_t max_menu[] = {9, 3, 5};
 
 // menu entry strings
 const char *entry_str[3][9] = {
@@ -87,7 +87,7 @@ const char *entry_str[3][9] = {
 {
 	"1: Back to main view",
 	"2: test string...",
-	"3: test string..."
+	"3: screenshot"
 },
 {
 	"1: Back to main view",
@@ -103,9 +103,9 @@ const char *entry_str[3][9] = {
 /***********************************************************************
 * draw a frame
 ***********************************************************************/
-static void draw_frame(void)
+static void draw_frame(CellPadData *data)
 {
-	int32_t i;
+	int8_t i;
 
 	// all 32bit colors are ARGB, the framebuffer format
 	set_foreground_color(0xFFFFFFFF);     // white, opac
@@ -126,7 +126,7 @@ static void draw_frame(void)
 	draw_background();
 	
 	// print headline string, coordinates in canvas = x(296 pixel), y(8 pixel)
-	print_text(293, 8, "PS3 VSH Menu");
+	print_text(4, 8, "PS3 VSH Menu");
 	
 	// print all menu entries for view, and the current selected entry in green
 	for(i = 0; i < max_menu[view]; i++)
@@ -137,10 +137,34 @@ static void draw_frame(void)
 	}
 	
 	#ifdef HAVE_STARFIELD
-	 move_star();
+	move_star();
 	#endif
 	
 	// ...
+	
+	// second menu, red one:
+	if(view == 1) {
+		//debug pdata, hexdump first 32 buttons
+		char text[128];
+		
+		i = 0;
+		sprintf(text, "*%p, %d bytes, %d buttons:", data, data->len, CELL_PAD_MAX_CODES);
+		print_text(4, 208 +(FONT_H * (i + 1)), text);
+		
+		uint16_t x = 0, y = 248;
+		for(i = 0; i < 32; i++)
+		{
+			sprintf(&text[x], "%.2x", data->button[i]);
+			x += 2;
+			text[x] = '\0';
+			
+			if(x %16 == 0)
+			{
+				print_text(4, y, text);
+				y += 20, x = 0;
+			}
+		}
+	}
 }
 
 
@@ -222,6 +246,7 @@ static void do_menu_action(void)
 	        break;
 	      case 2:                  // "3: test string..."
 	        //...
+					screenshot(1);
 	        break;
 		  }
 		  break;
@@ -255,36 +280,38 @@ static void do_menu_action(void)
 ***********************************************************************/
 static void vsh_menu_thread(uint64_t arg)
 {
+	#ifdef DEBUG
 	dbg_init();
 	dbg_printf("programstart:\n");
-	
-	uint32_t oldpad = 0, curpad = 0;
+	#endif
+
+	uint16_t oldpad = 0, curpad = 0;
 	CellPadData pdata;
-	
+
 	// wait for XMB, feedback
 	sys_timer_sleep(13);
-	vshtask_notify("sprx running...");
-	
+	//vshtask_notify("sprx running...");
+
 	play_rco_sound("system_plugin", "snd_trophy");
-	
+
 	#ifdef HAVE_STARFIELD
-	 init_once(/* stars */);
+	init_once(/* stars */);
 	#endif
-		
+
 	while(1)
 	{
 		// if VSH Menu is running, we get pad data over our MyPadGetData()
 		// else, we use the vsh pad_data struct
 		if(menu_running)
-		  MyPadGetData(0, &pdata);
+			MyPadGetData(0, &pdata);
 		else
-		  VSHPadGetData(&pdata);
+			VSHPadGetData(&pdata);
 		
 		// if pad_data and we are in XMB(vshmain_EB757101() == 0)
 		if((pdata.len > 0) && (vshmain_EB757101() == 0))
 		{
 			curpad = (pdata.button[2] | (pdata.button[3] << 8));
-			
+
 			if((curpad & PAD_SELECT) && (curpad != oldpad))
 			{
 				switch(menu_running)
@@ -294,7 +321,7 @@ static void vsh_menu_thread(uint64_t arg)
 					  // main view and start on first entry 
 					  view = line = 0;
 
-					  // 
+					  //
 					  pause_RSX_rendering();
 
 					  // create VSH Menu heap memory from memory container 1("app")
@@ -329,48 +356,54 @@ static void vsh_menu_thread(uint64_t arg)
 		  // VSH Menu is running, draw menu / check pad
 		  if(menu_running)
 		  {
-			   draw_frame();
+				#ifdef DEBUG
+				dbg_printf("%p\n", pdata);
+				#endif
+					
+				draw_frame(&pdata);
 
-			   flip_frame();
+				flip_frame();
 
-			   if((curpad & PAD_UP) && (curpad != oldpad))
-			   {
-					if(line <= 0)
-			        line = 0;
-					else
+				if(curpad != oldpad)
+				{
+
+					if(curpad & PAD_UP)
 					{
-					  line--;
-					  play_rco_sound("system_plugin", "snd_cursor");
+						if(line <= 0){
+							line = 0;
+						}else{
+							line--;
+							play_rco_sound("system_plugin", "snd_cursor");
+						}
 					}
+
+					if(curpad & PAD_DOWN)
+					{
+						if(line >= max_menu[view]-1){
+							line = max_menu[view]-1;
+						}else{
+							line++;
+							play_rco_sound("system_plugin", "snd_cursor");
+						}
+					}
+
+					if(curpad & PAD_CROSS) do_menu_action();
 				}
 
-			   if((curpad & PAD_DOWN) && (curpad != oldpad))
-			   {
-		      if(line >= max_menu[view]-1)
-		        line = max_menu[view]-1;
-					else
-				  	{
-				  	  line++;
-				  	  play_rco_sound("system_plugin", "snd_cursor");
-					}
-				}
+				// ...
 
-				if((curpad & PAD_CROSS) && (curpad != oldpad))
-					do_menu_action();
+				sys_timer_usleep(30);
 
-		  		// ...
+			} // end VSH Menu is running
 
-		  		sys_timer_usleep(30);
-			}
-	  		oldpad = curpad;
-		}
-		else
-		{
+			oldpad = curpad;
+		}else{
 			oldpad = 0;
 		}
 	}
-	
+	#ifdef DEBUG
 	dbg_fini();
+	#endif
 	sys_ppu_thread_exit(0);
 }
 

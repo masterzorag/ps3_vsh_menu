@@ -7,7 +7,7 @@
 #include <stdarg.h>
 
 // font constants
-#ifdef USE_PNG_FONT
+#ifdef HAVE_PNG_FONT
 #define PNG_FONT_PATH "/dev_hdd0/font.png"  // use external font.png
 #define FONT_PNG_W    512                   // width of font png file in pixel
 #define FONT_PNG_H    514                   // height of font png file in pixel
@@ -41,8 +41,8 @@
 // graphic buffers
 typedef struct _Buffer{
 	uint32_t *addr;         // buffer address
-	int32_t  w;             // buffer width
-	int32_t  h;             // buffer height
+	uint16_t  w;            // buffer width
+	uint16_t  h;            // buffer height
 } Buffer;
 
 
@@ -50,10 +50,14 @@ typedef struct _Buffer{
 typedef struct _DrawCtx{
 	uint32_t *canvas;             // addr of canvas
 	uint32_t *bg;                 // addr of background backup
-	uint32_t *font;               // addr of decoded png font 
-	Buffer   png[PNG_MAX];        // bitmaps
 	uint32_t bg_color;            // background color
 	uint32_t fg_color;            // foreground color
+
+#ifdef HAVE_PNG_FONT
+	uint32_t *font;               // addr of decoded png font
+#endif
+	
+	Buffer   png[PNG_MAX];        // bitmaps
 } DrawCtx;
 
 
@@ -78,12 +82,12 @@ void screenshot(uint8_t mode);
 #ifdef HAVE_STARFIELD
 /* star struct */
 typedef struct _STAR{
-	float xpos, ypos;
-	short zpos, speed;
-	unsigned int color;
+	float    xpos, ypos;
+	int16_t  zpos, speed;
+	uint32_t color;
 } STAR;
 
-void init_star(STAR *star, int32_t i);
+void init_star(STAR *star, const uint16_t i);
 void init_once(void);
 void move_star(void);
 #endif

@@ -5,7 +5,7 @@
 #include "mem.h"
 
 #include <cell/rtc.h>
-#include "network.h"               // debug
+//#include "network.h"               // debug
 
 
 
@@ -24,12 +24,13 @@ static int32_t h = 0, w = 0, canvas_x = 0, canvas_y = 0;
 ***********************************************************************/
 void pause_RSX_rendering()
 {
-	{ // is a flip occurred ? (the moment RSX has finished the rendering of a new frame and flip him on screen)
+	{
+	// is a flip occurred ? (the moment RSX has finished the rendering of a new frame and flip him on screen)
 	while(1)
 		if(*(uint32_t*)0x60201100 == 0x80000000) break;
 
 	rsx_fifo_pause(1);       // pause rsx fifo (no new frames...)
-  }
+	}
 }
 
 
@@ -42,8 +43,8 @@ static void dump_bg(void)
 	uint64_t *bg = (uint64_t*)ctx.bg;
 
 	for(i = 0; i < CANVAS_H; i++)
-		for(k = 0; k < CANVAS_W/2; k++)
-			bg[k + i * CANVAS_W/2] = *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i)));
+		for(k = 0; k < CANVAS_W /2; k++)
+			bg[k + i * CANVAS_W /2] = *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i)));
 }
 
 /***********************************************************************
@@ -54,13 +55,13 @@ void init_graphic()
 	memset(&ctx, 0, sizeof(DrawCtx));
 	
 	// alloc VSH Menu graphic buffers, generic based on canvas constants
-	buf[0].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // canvas buffer
-	buf[1].addr = mem_alloc(CANVAS_W * CANVAS_H * 4);       // background buffer
+	buf[0].addr = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));	// canvas buffer
+	buf[1].addr = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));	// background buffer
 
-	#ifdef USE_PNG_FONT
-	 // load font png
-	 Buffer font  = load_png(PNG_FONT_PATH);
-	 ctx.font     = font.addr;
+	#ifdef HAVE_PNG_FONT
+	// load font png
+	Buffer font  = load_png(PNG_FONT_PATH);
+	ctx.font     = font.addr;
 	#endif
 
 	// set drawing context
@@ -76,14 +77,14 @@ void init_graphic()
 	w = getDisplayWidth();                // display width
 
 	// get x/y start coordinates for our canvas, always center
-	canvas_x = (w - CANVAS_W) / 2;
-	canvas_y = (h - CANVAS_H) / 2;
+	canvas_x = (w - CANVAS_W) /2;
+	canvas_y = (h - CANVAS_H) /2;
 	
 	// dump background, for alpha blending
-  	dump_bg();
-  	
-  	// init first frame with background dump
-        memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * 4);
+	dump_bg();
+
+	// init first frame with background dump
+	memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 /***********************************************************************
@@ -127,11 +128,11 @@ void flip_frame()
 	uint64_t *canvas = (uint64_t*)ctx.canvas;
 
 	for(i = 0; i < CANVAS_H; i++)
-		for(k = 0; k < CANVAS_W/2; k++)
-			*(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W/2];
-			
+		for(k = 0; k < CANVAS_W /2; k++)
+			*(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W /2];
+
 	// after flip, clear frame buffer with background
-        memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * 4);
+	memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 /***********************************************************************
@@ -171,7 +172,7 @@ void draw_background()
 	}
 }
 
-#ifdef USE_PNG_FONT
+#ifdef HAVE_PNG_FONT
 /***********************************************************************
 * print text, with data from font.png
 *
@@ -236,7 +237,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 
 
 /***********************************************************************
-* print text, with xbm_font.h
+* print text, with data from xbm_font.h
 *
 * int32_t x       = start x coordinate into canvas
 * int32_t y       = start y coordinate into canvas
@@ -245,9 +246,8 @@ void print_text(int32_t x, int32_t y, const char *str)
 #include "xbm_font.h"
 void print_text(int32_t x, int32_t y, const char *str)
 {
-	short i, j;
-	int tx = 0, ty = 0, tc = ctx.fg_color;
-	char c;
+	uint32_t tx = 0, ty = 0, tc = ctx.fg_color;
+	uint8_t c, i, j;
 
 	while(*str != '\0'){
 		c = *str;
@@ -267,14 +267,18 @@ void print_text(int32_t x, int32_t y, const char *str)
 				}
 				else
 				{
-					// paint BG pixel (or trasparency)
+					// paint BG pixel (or do nothing for trasparency)
 					//ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.bg_color;
 				}
 			}
 			tx++;
-	  		if(tx == (FONT_W / BITS_IN_BYTE)) {
-	  			ty++;		// use to decrease gradient
-	  			tx = 0;
+			if(tx == (FONT_W / BITS_IN_BYTE))
+			{
+				ty++;		// use to decrease gradient
+				tx = 0;
+				tc -= ty * 15;
+				//tc = 0xff << 24 | (0xdf - ty * 4) << 16 | (0x0f + ty * 4) << 8  | (0xff - ty * 8);
+				//tc = (uint32_t)(0xff) << 24 | (uint32_t)(ty * 16) << 16 | (uint32_t)(ty * 16) << 8  | (uint32_t)(ty * 16);
 			}
 		}
 		ty = 0;
@@ -380,7 +384,7 @@ void screenshot(uint8_t mode)
 			bmp_buf[idx]   = tmp_buf[(i*w+k)*4+3];  // R
 			bmp_buf[idx+1] = tmp_buf[(i*w+k)*4+2];  // G
 			bmp_buf[idx+2] = tmp_buf[(i*w+k)*4+1];  // B
-			
+
 			idx+=3;
 		}
 	}
@@ -570,11 +574,11 @@ void draw_circle(int32_t x_c, int32_t y_c, int32_t r)
 
 #include <math.h>
 
-#define NUMBER_OF_STARS 1024
+#define NUMBER_OF_STARS 256*6		// max 2^16 for uint16_t
 
 static STAR stars[NUMBER_OF_STARS];
 
-void init_star(STAR *star, int i)
+void init_star(STAR *star, const uint16_t i)
 {
 	/* randomly init stars, generate them around the center of the screen */
 	star->xpos =  -10.0 + (20.0 * (rand()/(RAND_MAX+1.0)));
@@ -587,21 +591,23 @@ void init_star(STAR *star, int i)
 	star->zpos =  i;
 	star->speed = 2 + (int)(2.0 * (rand()/(RAND_MAX+1.0)));
 
+	/* the closer to viewer the brighter */
 	star->color =
-		(uint32_t)(i >> 2) << 24 | (uint32_t)(i >> 2) << 16 |
-		(uint32_t)(i >> 2) << 8  | (uint32_t)(i >> 2);
+		(uint8_t)( 0xfa ) << 24 | (uint8_t)(i >> 2) << 16 |
+		(uint8_t)(i >> 2) << 8  | (uint8_t)(i >> 2);
 }
 
 void init_once(/* stars, first run */)
 {
-  short i;
+  uint16_t i;
   for(i = 0; i < NUMBER_OF_STARS; i++) 
     init_star(stars + i, i + 1);
 }
 
 void move_star(void)
 {
-	short i, tx, ty;
+	int16_t tx, ty;
+	uint16_t i;
 	for(i = 0; i < NUMBER_OF_STARS; i++){
 		stars[i].zpos -= stars[i].speed;
 

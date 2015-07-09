@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
-//#include <math.h>
+
 #include <time.h>
 
 #include "inc/vsh_exports.h"
@@ -24,10 +24,9 @@
 #include "mem.h"
 #include "blitting.h"
 
-//#include <sys/socket.h>
-//#include <netinet/in.h>
+#ifdef DEBUG
 #include "network.h"
-
+#endif
 
 SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
@@ -125,46 +124,59 @@ static void draw_frame(CellPadData *data)
 	}
 	draw_background();
 	
-	// print headline string, coordinates in canvas = x(296 pixel), y(8 pixel)
-	print_text(4, 8, "PS3 VSH Menu");
-	
-	// print all menu entries for view, and the current selected entry in green
-	for(i = 0; i < max_menu[view]; i++)
-	{
-		i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
-		
-		print_text(4, 8 +(FONT_H * (i + 1)), entry_str[view][i]);
-	}
-	
-	#ifdef HAVE_STARFIELD
-	move_star();
-	#endif
-	
-	// ...
-	
-	// second menu, red one:
-	if(view == 1) {
-		//debug pdata, hexdump first 32 buttons
-		char text[128];
-		
-		i = 0;
-		sprintf(text, "*%p, %d bytes, %d buttons:", data, data->len, CELL_PAD_MAX_CODES);
-		print_text(4, 208 +(FONT_H * (i + 1)), text);
-		
-		uint16_t x = 0, y = 248;
-		for(i = 0; i < 32; i++)
-		{
-			sprintf(&text[x], "%.2x", data->button[i]);
-			x += 2;
-			text[x] = '\0';
-			
-			if(x %16 == 0)
-			{
-				print_text(4, y, text);
-				y += 20, x = 0;
-			}
-		}
-	}
+    #ifdef HAVE_STARFIELD
+    // first draw stars, keeping them under text lines
+    move_star();
+    #endif
+    print_text(4, 8, "PS3 VSH Menu");
+
+    // print all menu entries for view, and the current selected entry in green
+    for(i = 0; i < max_menu[view]; i++)
+    {
+        i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
+
+        print_text(4, 8 + (FONT_H * (i + 1)), entry_str[view][i]);
+    }
+
+    // reset back after last line
+    set_foreground_color(0xFFFFFFFF);
+
+    // ...
+
+    // second menu, red one:
+    if(view == 1)
+    {
+        /*
+          hexdump pad data: store in text 8 buttons in a row
+          in "%.4x" format plus 1 for ':', last one will be
+          replaced by terminator, no need to add 1
+        */
+        char templn[8 * (4 + 1)];
+
+        // pointer, size
+        sprintf(templn, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
+        print_text(4, 180, templn);
+
+        // hexdump first 32 buttons
+        uint16_t x = 0, y = 200;
+        for(i = 0; i < 32; i++)
+        {
+            sprintf(&templn[x], "%.4x:", data->button[i]);
+            x += 5;
+            templn[x] = '\0';
+
+            if(x %8 == 0)
+            {
+                // overwrite last ':' with terminator
+                templn[x -1] = '\0';
+                print_text(4, y, templn);
+                x = 0, y += FONT_H;
+            }
+        }
+    }
+
+    // ...
+
 }
 
 

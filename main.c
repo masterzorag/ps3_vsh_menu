@@ -41,6 +41,8 @@ int32_t vsh_menu_start(uint64_t arg);
 int32_t vsh_menu_stop(void);
 
 
+// a temporary color, to preview text in realtime
+uint8_t a, r, g, b;
 
 /***********************************************************************
 * sys_ppu_thread_exit, direct over syscall
@@ -68,32 +70,35 @@ static int8_t line = 0;					// current line into menu, init 0 (entry 1:)
 static int8_t view = 0;					// menu view, init 0 (main view)
 
 // max menu entries per view
-static int8_t max_menu[] = {9, 3, 5};
+static int8_t max_menu[] = {9, 6, 5};
 
 // menu entry strings
 const char *entry_str[3][9] = {
 {
-	"1: Make a single beep",
-	"2: Make a double beep",
-	"3: Enter second menu view",
-	"4: Enter third menu view",
-	"5: Play trophy sound",
-	"6: Make screenshot",
-	"7: Make screenshot with Menu",
-	"8: Reset PS3",
-	"9: Shutdown PS3"
+    "1: Make a single beep",
+    "2: Make a double beep",
+    "3: Enter second menu view",
+    "4: Enter third menu view",
+    "5: Play trophy sound",
+    "6: Make screenshot",
+    "7: Make screenshot with Menu",
+    "8: Reset PS3",
+    "9: Shutdown PS3"
+},
+{   // red menu
+    "1: Back to main view",
+    "2: screenshot",
+    "3: Alpha",
+    "4: Red",
+    "5: Green",
+    "6: Blue"
 },
 {
-	"1: Back to main view",
-	"2: test string...",
-	"3: screenshot"
-},
-{
-	"1: Back to main view",
-	"2: test string...",
-	"3: test string...",
-	"4: test string...",
-	"5: test string..."
+    "1: Back to main view",
+    "2: test string...",
+    "3: test string...",
+    "4: test string...",
+    "5: test string..."
 }
 };
 
@@ -122,12 +127,14 @@ static void draw_frame(CellPadData *data)
 		  set_background_color(0x7F00FF00);     // green, semitransparent
 		  break;
 	}
-	draw_background();
-	
+    draw_background();
+
     #ifdef HAVE_STARFIELD
     // first draw stars, keeping them under text lines
     move_star();
     #endif
+
+    // print headline string, coordinates in canvas
     print_text(4, 8, "PS3 VSH Menu");
 
     // print all menu entries for view, and the current selected entry in green
@@ -138,7 +145,7 @@ static void draw_frame(CellPadData *data)
         print_text(4, 8 + (FONT_H * (i + 1)), entry_str[view][i]);
     }
 
-    // reset back after last line
+    // (re)set back after last line
     set_foreground_color(0xFFFFFFFF);
 
     // ...
@@ -173,6 +180,15 @@ static void draw_frame(CellPadData *data)
                 x = 0, y += FONT_H;
             }
         }
+
+        // update temp color and print its value
+        uint32_t tmp_c = 
+        (uint8_t)(a) << 24 | (uint8_t)(r) << 16 |
+        (uint8_t)(g) << 8  | (uint8_t)(b);
+        set_foreground_color(tmp_c);
+
+        sprintf(templn, "%.8x", tmp_c);
+        print_text(400, 10, templn);
     }
 
     // ...
@@ -193,19 +209,49 @@ static void stop_VSH_Menu(void)
 	destroy_heap();
 
 	// continue rsx rendering
-	rsx_fifo_pause(0); 
+	rsx_fifo_pause(0);
 }
 
 
+/***********************************************************************
+* execute a menu action, based on line(current selected menu entry)
+***********************************************************************/
+static void do_leftright_action(uint16_t curpad)
+{
+  if(view == 1)     // only on second screen
+  {
+    switch(line)
+    {
+      case 2:       // 3: Alpha
+        (curpad & PAD_LEFT) ? a-- : a++;
+        break;
+      case 3:       // 4: Red
+        (curpad & PAD_LEFT) ? r-- : r++;
+        break;
+      case 4:       // 5: Green
+        (curpad & PAD_LEFT) ? g-- : g++;
+        break;
+      case 5:       // 6: Blue
+        (curpad & PAD_LEFT) ? b-- : b++;
+        break;
+
+      default:      // do nothing
+        return;
+    }
+
+    play_rco_sound("system_plugin", "snd_cursor");
+  }
+}
+
 
 /***********************************************************************
-* execute a menu aktion, based on line(current selected menu entry)
+* execute a menu action, based on line(current selected menu entry)
 ***********************************************************************/
 static void do_menu_action(void)
 {
 	switch(view)
 	{
-		case 0:                    // main menu view 
+		case 0:                    // main menu view
 		  switch(line)
 	    {
 	      case 0:                  // "1: Make a single beep"
@@ -250,15 +296,23 @@ static void do_menu_action(void)
 		case 1:                    // second menu view
 		  switch(line)
 	    {
-	      case 0:                  // "1: Back to main view"
+	      case 0:                  // 1: Back to main view"
 	        view = line = 0;
 	        break;
-	      case 1:                  // "2: test string..."
+	      case 1:                  // 2: screenshot
+            screenshot(1);
+	        break;
+	      case 2:                  // 3: Alpha
 	        //...
 	        break;
-	      case 2:                  // "3: test string..."
+        case 3:                  // 4: Red
 	        //...
-					screenshot(1);
+	        break;
+        case 4:                  // 5: Green
+	        //...
+	        break;
+        case 5:                  // 6: Blue
+	        //...
 	        break;
 		  }
 		  break;
@@ -399,7 +453,11 @@ static void vsh_menu_thread(uint64_t arg)
 						}
 					}
 
+                    if(curpad & PAD_LEFT
+                    || curpad & PAD_RIGHT) do_leftright_action(curpad);
+
 					if(curpad & PAD_CROSS) do_menu_action();
+
 				}
 
 				// ...

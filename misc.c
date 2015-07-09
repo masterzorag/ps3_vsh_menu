@@ -1,6 +1,5 @@
 #include "misc.h"
 #include "inc/vsh_exports.h"
-#include "network.h"            // debug
 
 
 static void *vsh_pdata_addr = NULL;
@@ -153,4 +152,24 @@ void buzzer(uint8_t mode)
 	}
 	
 	system_call_3(392, 0x1007, 0xA, param);
+}
+/***********************************************************************
+* #define SC_GET_TEMPERATURE				(383)
+***********************************************************************/
+void get_temperature(uint32_t _dev, uint32_t *_temp)
+{
+  system_call_2(383, (uint64_t)_dev, (uint64_t)_temp);
+}
+
+/***********************************************************************
+* a wrapper to read temperature data and compose text string from
+***********************************************************************/
+void read_temperature(char *data)
+{
+  uint32_t t1 = 0, t2 = 0;
+  get_temperature(0, &t1); // 3E030000 -> 3E.03°C -> 62.(03/256)°C
+  get_temperature(1, &t2);
+  t1 = t1 >> 24;
+  t2 = t2 >> 24;
+  sprintf(data, "CPU:%iC, RSX:%iC", t1, t2);
 }

@@ -50,4 +50,6 @@ void delete_turnoff_flag(void);
 void play_rco_sound(const char *plugin, const char *sound);
 void buzzer(uint8_t mode);
 
+void get_temperature(uint32_t _dev, uint32_t *_temp);
+void read_temperature(char *data);
 #endif // __MISC_H__ 

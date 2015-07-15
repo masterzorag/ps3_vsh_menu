@@ -56,8 +56,8 @@ void VSHPadGetData(CellPadData *data)
 	  	{
 			if((*(uint64_t*)pm_start == pat[0]) && (*(uint64_t*)(pm_start+8) == pat[1]))
 		  	{
-		  		vsh_pdata_addr = (void*)((((*(uint32_t*)(pm_start + 0x234) & 0x0000FFFF) -1) <<16) |
-		  		                     (*(uint32_t*)(pm_start + 0x244) & 0x0000FFFF));
+		  		vsh_pdata_addr = (void*)(uint32_t)((int32_t)((*(uint32_t*)(pm_start + 0x234) & 0x0000FFFF) <<16) +
+		  	                                           (int16_t)( *(uint32_t*)(pm_start + 0x244) & 0x0000FFFF));
 			  	break;
 		  	}
 		  

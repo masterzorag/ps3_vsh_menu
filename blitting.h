@@ -49,24 +49,24 @@
 
 // graphic buffers
 typedef struct _Buffer{
-	uint32_t *addr;         // buffer address
-	uint16_t  w;            // buffer width
-	uint16_t  h;            // buffer height
+    uint32_t *addr;        // buffer address
+    uint16_t  w;           // buffer width
+    uint16_t  h;           // buffer height
 } Buffer;
 
 
 // drawing context
 typedef struct _DrawCtx{
-	uint32_t *canvas;             // addr of canvas
-	uint32_t *bg;                 // addr of background backup
-	uint32_t bg_color;            // background color
-	uint32_t fg_color;            // foreground color
+    uint32_t *canvas;      // addr of canvas
+    uint32_t *bg;          // addr of background backup
+    uint32_t bg_color;     // background color
+    uint32_t fg_color;     // foreground color
 
-#ifdef HAVE_PNG_FONT
-	uint32_t *font;               // addr of decoded png font
-#endif
-	
-	Buffer   png[PNG_MAX];        // bitmaps
+    #ifdef HAVE_PNG_FONT
+    uint32_t *font;        // addr of decoded png font
+    #endif
+
+    Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx;
 
 

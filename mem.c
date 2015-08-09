@@ -2,7 +2,6 @@
 
 #include "mem.h"
 #include "inc/vsh_exports.h"
-#include "network.h"            // debug
 
 
 static sys_memory_container_t mc_app = (sys_memory_container_t)-1;

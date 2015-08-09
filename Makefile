@@ -21,7 +21,7 @@ PPU_PRX_LDFLAGS = -L ./lib --gc-sections --as-needed
 PPU_PRX_STRIP_FLAGS = -s
 
 PPU_PRX_LDLIBS  = -lfs_stub \
-									-lrtc_stub \
+                  -lrtc_stub \
                   -lstdc_export_stub \
                   -lsysPrxForUser_export_stub \
                   -lvsh_export_stub \

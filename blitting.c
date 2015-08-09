@@ -65,14 +65,14 @@ void init_graphic()
     // set drawing context
     ctx.canvas   = buf[0].addr;
     ctx.bg       = buf[1].addr;
-    ctx.bg_color = 0xFF000000;            // black, opaque
-    ctx.fg_color = 0xFFFFFFFF;            // white, opaque
+    ctx.bg_color = 0xFF000000;          // black, opaque
+    ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     // get current display values
-    offset = *(uint32_t*)0x60201104;      // start offset of current framebuffer
-    getDisplayPitch(&pitch, &unk1);       // framebuffer pitch size
-    h = getDisplayHeight();               // display height
-    w = getDisplayWidth();                // display width
+    offset = *(uint32_t*)0x60201104;    // start offset of current framebuffer
+    getDisplayPitch(&pitch, &unk1);     // framebuffer pitch size
+    h = getDisplayHeight();             // display height
+    w = getDisplayWidth();              // display width
 
     // get x/y start coordinates for our canvas, always center
     canvas_x = (w - CANVAS_W) /2;
@@ -324,8 +324,8 @@ void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t 
     for(i = 0; i < w * h; i++)
     {
         ctx.canvas[(can_x + can_y * CANVAS_W) + (tmp_x + tmp_y * CANVAS_W)] =
-        mix_color(ctx.canvas[(can_x + can_y * CANVAS_W) + (tmp_x + tmp_y * CANVAS_W)],
-        ctx.png[idx].addr[(png_x + png_y * ctx.png[idx].w) + (tmp_x + tmp_y * ctx.png[idx].w)]);
+            mix_color(ctx.canvas[(can_x + can_y * CANVAS_W) + (tmp_x + tmp_y * CANVAS_W)],
+            ctx.png[idx].addr[(png_x + png_y * ctx.png[idx].w) + (tmp_x + tmp_y * ctx.png[idx].w)]);
 
         tmp_x++;
 
@@ -396,10 +396,9 @@ void screenshot(uint8_t mode)
 
         for(k = 0; k < w; k++)
         {
-            bmp_buf[idx]   = tmp_buf[(i*w+k)*4+3];  // R
-            bmp_buf[idx+1] = tmp_buf[(i*w+k)*4+2];  // G
-            bmp_buf[idx+2] = tmp_buf[(i*w+k)*4+1];  // B
-
+            bmp_buf[idx   ] = tmp_buf[(i*w+k)*4 +3];  // R
+            bmp_buf[idx +1] = tmp_buf[(i*w+k)*4 +2];  // G
+            bmp_buf[idx +2] = tmp_buf[(i*w+k)*4 +1];  // B
             idx+=3;
         }
     }

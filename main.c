@@ -30,10 +30,10 @@
 
 SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
-SYS_MODULE_STOP(vsh_menu_stop);
+SYS_MODULE_STOP (vsh_menu_stop);
 
-#define THREAD_NAME				"vsh_menu_thread"
-#define STOP_THREAD_NAME	"vsh_menu_stop_thread"
+#define THREAD_NAME         "vsh_menu_thread"
+#define STOP_THREAD_NAME    "vsh_menu_stop_thread"
 
 static sys_ppu_thread_t vsh_menu_tid = -1;
 static int8_t done = 0;
@@ -49,7 +49,7 @@ uint8_t a, r, g, b;
 ***********************************************************************/
 static inline void _sys_ppu_thread_exit(uint64_t val)
 {
-	system_call_1(41, val);
+    system_call_1(41, val);
 }
 
 
@@ -58,16 +58,16 @@ static inline void _sys_ppu_thread_exit(uint64_t val)
 ***********************************************************************/
 static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 {
-	system_call_1(461, (uint64_t)(uint32_t)addr);
-	return (int32_t)p1;
+    system_call_1(461, (uint64_t)(uint32_t)addr);
+    return (int32_t)p1;
 }
 
 
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
 static int8_t menu_running = 0;	// vsh menu off(0) or on(1)
-static int8_t line = 0;					// current line into menu, init 0 (entry 1:)
-static int8_t view = 0;					// menu view, init 0 (main view)
+static int8_t line = 0;			// current line into menu, init 0 (entry 1:)
+static int8_t view = 0;			// menu view, init 0 (main view)
 
 // max menu entries per view
 static int8_t max_menu[] = {9, 6, 5};
@@ -109,24 +109,24 @@ const char *entry_str[3][9] = {
 ***********************************************************************/
 static void draw_frame(CellPadData *data)
 {
-	int8_t i;
+    int8_t i;
 
-	// all 32bit colors are ARGB, the framebuffer format
-	set_foreground_color(0xFFFFFFFF);     // white, opac
-	
-	// draw the right background color for current view
-	switch(view)
-	{
-		case 0:
-		  set_background_color(0x7F0000FF);     // blue, semitransparent
-		  break;
-		case 1:
-		  set_background_color(0x7FFF0000);     // red, semitransparent
-		  break;
-		case 2:
-		  set_background_color(0x7F00FF00);     // green, semitransparent
-		  break;
-	}
+    // all 32bit colors are ARGB, the framebuffer format
+    set_foreground_color(0xFFFFFFFF);     // white, opac
+
+    // draw the right background color for current view
+    switch(view)
+    {
+        case 0:
+          set_background_color(0x7F0000FF);     // blue, semitransparent
+          break;
+        case 1:
+          set_background_color(0x7FFF0000);     // red, semitransparent
+          break;
+        case 2:
+          set_background_color(0x7F00FF00);     // green, semitransparent
+          break;
+    }
     draw_background();
 
     #ifdef HAVE_STARFIELD
@@ -207,14 +207,14 @@ static void draw_frame(CellPadData *data)
 ***********************************************************************/
 static void stop_VSH_Menu(void)
 {
-	// menu off
-	menu_running = 0;
-	
-	// free heap memory
-	destroy_heap();
+    // menu off
+    menu_running = 0;
 
-	// continue rsx rendering
-	rsx_fifo_pause(0);
+    // free heap memory
+    destroy_heap();
+
+    // continue rsx rendering
+    rsx_fifo_pause(0);
 }
 
 
@@ -254,94 +254,94 @@ static void do_leftright_action(uint16_t curpad)
 ***********************************************************************/
 static void do_menu_action(void)
 {
-	switch(view)
-	{
-		case 0:                    // main menu view
-		  switch(line)
-	    {
-	      case 0:                  // "1: Make a single beep"
-	        buzzer(1);
-	        break;
-	      case 1:                  // "2: Make a double beep"
-	        buzzer(2);
-	        break;
-	      case 2:                  // "3: Enter second menu view"
-	        view = 1;              // change menu view
-	        line = 0;              // on start entry
-	        break;
-	      case 3:                  // "4: Enter third menu view"
-	        view = 2;              // change menu view
-	        line = 0;              // on start entry
-	        break;
-	      case 4:                  // "5: Play trophy sound"
-	        play_rco_sound("system_plugin", "snd_trophy");
-	        break;
-	      case 5:                  // "6: Make screenshot"
-	        screenshot(0);         // xmb only
-	        play_rco_sound("system_plugin", "snd_system_ok");
-	        break;
-	      case 6:                  // "7: Make screenshot with menu"
-	        screenshot(1);         //
-	        play_rco_sound("system_plugin", "snd_system_ok");
-	        break;
-	      case 7:                  // "8: Reset PS3"
-	        stop_VSH_Menu();
-	        delete_turnoff_flag();
-	        sys_timer_sleep(1);
-	        vshmain_87BB0001(2);
-	        break;
-	      case 8:                  // "9: Shutdown PS3"
-	        stop_VSH_Menu();
-	        delete_turnoff_flag();
-	        sys_timer_sleep(1);
-	        vshmain_87BB0001(1);
-	        break;
+    switch(view)
+    {
+        case 0:                    // main menu view
+          switch(line)
+        {
+          case 0:                  // "1: Make a single beep"
+            buzzer(1);
+            break;
+          case 1:                  // "2: Make a double beep"
+            buzzer(2);
+            break;
+          case 2:                  // "3: Enter second menu view"
+            view = 1;              // change menu view
+            line = 0;              // on start entry
+            break;
+          case 3:                  // "4: Enter third menu view"
+            view = 2;              // change menu view
+            line = 0;              // on start entry
+            break;
+          case 4:                  // "5: Play trophy sound"
+            play_rco_sound("system_plugin", "snd_trophy");
+            break;
+          case 5:                  // "6: Make screenshot"
+            screenshot(0);         // xmb only
+            play_rco_sound("system_plugin", "snd_system_ok");
+            break;
+          case 6:                  // "7: Make screenshot with menu"
+            screenshot(1);         //
+            play_rco_sound("system_plugin", "snd_system_ok");
+            break;
+          case 7:                  // "8: Reset PS3"
+            stop_VSH_Menu();
+            delete_turnoff_flag();
+            sys_timer_sleep(1);
+            vshmain_87BB0001(2);
+            break;
+          case 8:                  // "9: Shutdown PS3"
+            stop_VSH_Menu();
+            delete_turnoff_flag();
+            sys_timer_sleep(1);
+            vshmain_87BB0001(1);
+            break;
       }
-		  break;
-		case 1:                    // second menu view
-		  switch(line)
-	    {
-	      case 0:                  // 1: Back to main view"
-	        view = line = 0;
-	        break;
-	      case 1:                  // 2: screenshot
+          break;
+        case 1:                    // second menu view
+          switch(line)
+        {
+          case 0:                  // 1: Back to main view"
+            view = line = 0;
+            break;
+          case 1:                  // 2: screenshot
             screenshot(1);
-	        break;
-	      case 2:                  // 3: Alpha
-	        //...
-	        break;
+            break;
+          case 2:                  // 3: Alpha
+            //...
+            break;
         case 3:                  // 4: Red
-	        //...
-	        break;
+            //...
+            break;
         case 4:                  // 5: Green
-	        //...
-	        break;
+            //...
+            break;
         case 5:                  // 6: Blue
-	        //...
-	        break;
-		  }
-		  break;
-		case 2:                    // third menu view
-		  switch(line)
-	    {
-	      case 0:                  // "1: Back to main view"
-	        view = line = 0;
-	        break;
-	      case 1:                  // "2: test string..."
-	        //...
-	        break;
-	      case 2:                  // "3: test string..."
-	        //...
-	        break;
-	      case 3:                  // "4: test string..."
-	        //...
-	        break;
-	      case 4:                  // "5: test string..."
-	        //...
-	        break;
-		  }
-		  break;
-	}
+            //...
+            break;
+          }
+          break;
+        case 2:                    // third menu view
+          switch(line)
+        {
+          case 0:                  // "1: Back to main view"
+            view = line = 0;
+            break;
+          case 1:                  // "2: test string..."
+            //...
+            break;
+          case 2:                  // "3: test string..."
+            //...
+            break;
+          case 3:                  // "4: test string..."
+            //...
+            break;
+          case 4:                  // "5: test string..."
+            //...
+            break;
+          }
+          break;
+    }
 }
 
 
@@ -351,135 +351,135 @@ static void do_menu_action(void)
 ***********************************************************************/
 static void vsh_menu_thread(uint64_t arg)
 {
-	#ifdef DEBUG
-	dbg_init();
-	dbg_printf("programstart:\n");
-	#endif
+    #ifdef DEBUG
+    dbg_init();
+    dbg_printf("programstart:\n");
+    #endif
 
-	uint16_t oldpad = 0, curpad = 0;
-	CellPadData pdata;
+    uint16_t oldpad = 0, curpad = 0;
+    CellPadData pdata;
 
-	// wait for XMB, feedback
-	sys_timer_sleep(13);
-	//vshtask_notify("sprx running...");
+    // wait for XMB, feedback
+    sys_timer_sleep(13);
+    //vshtask_notify("sprx running...");
 
-	play_rco_sound("system_plugin", "snd_trophy");
+    play_rco_sound("system_plugin", "snd_trophy");
 
-	#ifdef HAVE_STARFIELD
-	init_once(/* stars */);
-	#endif
+    #ifdef HAVE_STARFIELD
+    init_once(/* stars */);
+    #endif
 
-	while(1)
-	{
-		// if VSH Menu is running, we get pad data over our MyPadGetData()
-		// else, we use the vsh pad_data struct
-		if(menu_running)
-			MyPadGetData(0, &pdata);
-		else
-			VSHPadGetData(&pdata);
+    while(1)
+    {
+        // if VSH Menu is running, we get pad data over our MyPadGetData()
+        // else, we use the vsh pad_data struct
+        if(menu_running)
+            MyPadGetData(0, &pdata);
+        else
+            VSHPadGetData(&pdata);
 		
-		// if pad_data and we are in XMB(vshmain_EB757101() == 0)
-		if((pdata.len > 0) && (vshmain_EB757101() == 0))
-		{
-			curpad = (pdata.button[2] | (pdata.button[3] << 8));
+        // if pad_data and we are in XMB(vshmain_EB757101() == 0)
+        if((pdata.len > 0) && (vshmain_EB757101() == 0))
+        {
+            curpad = (pdata.button[2] | (pdata.button[3] << 8));
 
-			if((curpad & PAD_SELECT) && (curpad != oldpad))
-			{
-				switch(menu_running)
-				{
-					// VSH Menu not running, start VSH Menu
-					case 0:
-					  // main view and start on first entry 
-					  view = line = 0;
+            if((curpad & PAD_SELECT) && (curpad != oldpad))
+            {
+                switch(menu_running)
+                {
+                    // VSH Menu not running, start VSH Menu
+                    case 0:
+                      // main view and start on first entry 
+                      view = line = 0;
+    
+                      //
+                      pause_RSX_rendering();
+    
+                      // create VSH Menu heap memory from memory container 1("app")
+                      create_heap(64);       // 64 MB
+    
+                      // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
+                      init_graphic();
+    
+                      // stop vsh pad
+                      start_stop_vsh_pad(0);
 
-					  //
-					  pause_RSX_rendering();
-
-					  // create VSH Menu heap memory from memory container 1("app")
-					  create_heap(64);       // 64 MB
-
-					  // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
-					  init_graphic();
-
-					  // stop vsh pad
-					  start_stop_vsh_pad(0);
-
-					  // set menu_running
-					  menu_running = 1;
-
-					  break;
-
-					// VSH Menu is running, stop VSH Menu
-					case 1:
-					  stop_VSH_Menu();
-
-					  // restart vsh pad
-					  start_stop_vsh_pad(1);
-	
-					  break;
-				}
-
-				oldpad = 0;
-				sys_timer_usleep(300000);
-		  }
+                      // set menu_running
+                      menu_running = 1;
+    
+                      break;
+    
+                    // VSH Menu is running, stop VSH Menu
+                    case 1:
+                      stop_VSH_Menu();
+    
+                      // restart vsh pad
+                      start_stop_vsh_pad(1);
+    
+                      break;
+                }
+    
+                oldpad = 0;
+                sys_timer_usleep(300000);
+            }
 
 
-		  // VSH Menu is running, draw menu / check pad
-		  if(menu_running)
-		  {
-				#ifdef DEBUG
-				dbg_printf("%p\n", pdata);
-				#endif
-					
-				draw_frame(&pdata);
+          // VSH Menu is running, draw menu / check pad
+          if(menu_running)
+          {
+                #ifdef DEBUG
+                dbg_printf("%p\n", pdata);
+                #endif
 
-				flip_frame();
+                draw_frame(&pdata);
 
-				if(curpad != oldpad)
-				{
+                flip_frame();
 
-					if(curpad & PAD_UP)
-					{
-						if(line <= 0){
-							line = 0;
-						}else{
-							line--;
-							play_rco_sound("system_plugin", "snd_cursor");
-						}
-					}
+                if(curpad != oldpad)
+                {
 
-					if(curpad & PAD_DOWN)
-					{
-						if(line >= max_menu[view]-1){
-							line = max_menu[view]-1;
-						}else{
-							line++;
-							play_rco_sound("system_plugin", "snd_cursor");
-						}
-					}
+                    if(curpad & PAD_UP)
+                    {
+                        if(line <= 0){
+                            line = 0;
+                        }else{
+                            line--;
+                            play_rco_sound("system_plugin", "snd_cursor");
+                        }
+                    }
+
+                    if(curpad & PAD_DOWN)
+                    {
+                        if(line >= max_menu[view]-1){
+                            line = max_menu[view]-1;
+                        }else{
+                            line++;
+                            play_rco_sound("system_plugin", "snd_cursor");
+                        }
+                    }
 
                     if(curpad & PAD_LEFT
                     || curpad & PAD_RIGHT) do_leftright_action(curpad);
 
-					if(curpad & PAD_CROSS) do_menu_action();
+                    if(curpad & PAD_CROSS) do_menu_action();
 
-				}
+                }
 
-				// ...
+                // ...
 
-				sys_timer_usleep(30);
+                sys_timer_usleep(30);
 
-			} // end VSH Menu is running
+            } // end VSH Menu is running
 
-			oldpad = curpad;
-		}else{
-			oldpad = 0;
-		}
-	}
-	#ifdef DEBUG
-	dbg_fini();
-	#endif
-	sys_ppu_thread_exit(0);
+            oldpad = curpad;
+        }else{
+            oldpad = 0;
+        }
+    }
+    #ifdef DEBUG
+    dbg_fini();
+    #endif
+    sys_ppu_thread_exit(0);
 }
 
 
@@ -488,10 +488,10 @@ static void vsh_menu_thread(uint64_t arg)
 ***********************************************************************/
 int32_t vsh_menu_start(uint64_t arg)
 {
-	sys_ppu_thread_create(&vsh_menu_tid, vsh_menu_thread, 0, 3000, 0x4000, 1, THREAD_NAME);
+    sys_ppu_thread_create(&vsh_menu_tid, vsh_menu_thread, 0, 3000, 0x4000, 1, THREAD_NAME);
 
-	_sys_ppu_thread_exit(0);
-	return SYS_PRX_RESIDENT;
+    _sys_ppu_thread_exit(0);
+    return SYS_PRX_RESIDENT;
 }
 
 
@@ -500,15 +500,15 @@ int32_t vsh_menu_start(uint64_t arg)
 ***********************************************************************/
 static void vsh_menu_stop_thread(uint64_t arg)
 {
-	done = 1;
+    done = 1;
+
+    if(vsh_menu_tid != (sys_ppu_thread_t)-1)
+    {
+        uint64_t exit_code;
+        sys_ppu_thread_join(vsh_menu_tid, &exit_code);
+    }
 	
-	if(vsh_menu_tid != (sys_ppu_thread_t)-1)
-	{
-		uint64_t exit_code;
-		sys_ppu_thread_join(vsh_menu_tid, &exit_code);
-	}
-	
-	sys_ppu_thread_exit(0);
+    sys_ppu_thread_exit(0);
 }
 
 
@@ -517,15 +517,15 @@ static void vsh_menu_stop_thread(uint64_t arg)
 ***********************************************************************/
 static void finalize_module(void)
 {
-	uint64_t meminfo[5];
+    uint64_t meminfo[5];
 
-	sys_prx_id_t prx = prx_get_module_id_by_address(finalize_module);
+    sys_prx_id_t prx = prx_get_module_id_by_address(finalize_module);
 
-	meminfo[0] = 0x28;
-	meminfo[1] = 2;
-	meminfo[3] = 0;
+    meminfo[0] = 0x28;
+    meminfo[1] = 2;
+    meminfo[3] = 0;
 
-	system_call_3(482, prx, 0, (uint64_t)(uint32_t)meminfo);
+    system_call_3(482, prx, 0, (uint64_t)(uint32_t)meminfo);
 }
 
 
@@ -534,13 +534,13 @@ static void finalize_module(void)
 ***********************************************************************/
 int vsh_menu_stop(void)
 {
-	sys_ppu_thread_t t;
-	uint64_t exit_code;
+    sys_ppu_thread_t t;
+    uint64_t exit_code;
 
-	sys_ppu_thread_create(&t, vsh_menu_stop_thread, 0, 0, 0x2000, 1, STOP_THREAD_NAME);
-	sys_ppu_thread_join(t, &exit_code);	
+    sys_ppu_thread_create(&t, vsh_menu_stop_thread, 0, 0, 0x2000, 1, STOP_THREAD_NAME);
+    sys_ppu_thread_join(t, &exit_code);
 
-	finalize_module();
-	_sys_ppu_thread_exit(0);
-	return SYS_PRX_STOP_OK;
+    finalize_module();
+    _sys_ppu_thread_exit(0);
+    return SYS_PRX_STOP_OK;
 }

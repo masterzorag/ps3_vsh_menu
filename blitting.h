@@ -18,6 +18,9 @@
 #define FONT_H        16
 #endif
 
+// additional png bitmaps
+#define PNG_MAX    4
+
 // canvas constants
 // the values for canvas width and height can be changed for make a smaller or larger
 // menu. They must be smaller than the max resulution of 1920*1080 and additional
@@ -28,14 +31,20 @@
 #define CANVAS_W      720               // canvas width in pixel
 #define CANVAS_H      400               // canvas height in pixel
 
-
 // get pixel offset into framebuffer by x/y coordinates
 #define OFFSET(x, y) ((((uint32_t)offset) + ((((int16_t)x) + \
                      (((int16_t)y) * (((uint32_t)pitch) / \
                      ((int32_t)4)))) * ((int32_t)4))) + (BASE))
 
+// compose ARGB color by components
+#define ARGB(a, r, g, b) ((((a) &0xFF) <<24) | (((r) &0xFF) <<16) \
+                        | (((g) &0xFF) << 8) | (((b) &0xFF) << 0))
 
-#define PNG_MAX    4      // additional png bitmaps
+// extract single component form ARGB color
+#define GET_A(color) ((color >>24) &0xFF)
+#define GET_R(color) ((color >>16) &0xFF)
+#define GET_G(color) ((color >> 8) &0xFF)
+#define GET_B(color) ((color >> 0) &0xFF)
 
 
 // graphic buffers
@@ -82,9 +91,9 @@ void screenshot(uint8_t mode);
 #ifdef HAVE_STARFIELD
 /* star struct */
 typedef struct _STAR{
-	float    xpos, ypos;
-	int16_t  zpos, speed;
-	uint32_t color;
+    float   xpos, ypos;
+    int16_t zpos, speed;
+    uint8_t color;
 } STAR;
 
 void init_star(STAR *star, const uint16_t i);

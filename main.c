@@ -135,7 +135,7 @@ static void draw_frame(CellPadData *data)
     #endif
 
     // print headline string, coordinates in canvas
-    print_text(4, 8, "PS3 VSH Menu");
+    print_text(4, 4, "PS3 VSH Menu");
 
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
@@ -145,7 +145,7 @@ static void draw_frame(CellPadData *data)
         print_text(4, 8 + (FONT_H * (i + 1)), entry_str[view][i]);
     }
 
-    // (re)set back after last line
+    // (re)set back after draw last line
     set_foreground_color(0xFFFFFFFF);
 
     // ...
@@ -182,13 +182,18 @@ static void draw_frame(CellPadData *data)
         }
 
         // update temp color and print its value
-        uint32_t tmp_c = 
-        (uint8_t)(a) << 24 | (uint8_t)(r) << 16 |
-        (uint8_t)(g) << 8  | (uint8_t)(b);
+        uint32_t tmp_c = ARGB(a, r, g, b);
         set_foreground_color(tmp_c);
 
         sprintf(templn, "%.8x", tmp_c);
-        print_text(400, 10, templn);
+        print_text(400, 4, templn);
+        // testing color macros
+        a = GET_A(tmp_c);
+        r = GET_R(tmp_c);
+        g = GET_G(tmp_c);
+        b = GET_B(tmp_c);
+        sprintf(templn, "%.2x:%.2x:%.2x:%.2x", a, r, g, b);
+        print_text(400, 20, templn);
     }
 
     // ...

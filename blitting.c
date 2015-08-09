@@ -262,7 +262,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 
         char *bit = xbmFont[c - LOWER_ASCII_CODE];
 
-        // reset color to get vertical gradient
+        // reset color (for each glyph) to get vertical gradient
         tc = ctx.fg_color;
 
         // dump bits map (bytes_per_line 2, size 32 char of 8 bit)
@@ -289,7 +289,7 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tx = 0, ty++;        // use to decrease gradient
 
                 // vertical gradient
-                tc -= ty * 256 * 3;
+                tc -= ty * 580;
 
                 // horizontal gradient
                 //tc -= ty * 15;
@@ -604,10 +604,8 @@ void init_star(STAR *star, const uint16_t i)
     star->zpos =  i;
     star->speed = 2 + (int)(2.0 * (rand()/(RAND_MAX+1.0)));
 
-    /* the closer to viewer the brighter */
-    star->color =
-        (uint8_t)( 0xfa ) << 24 | (uint8_t)(i >> 2) << 16 |
-        (uint8_t)(i >> 2) << 8  | (uint8_t)(i >> 2);
+    /* the closer to the viewer the brighter */
+    star->color = i >> 2;
 }
 
 void init_once(/* stars, first run */)
@@ -621,6 +619,7 @@ void move_star(void)
 {
     int16_t tx, ty;
     uint16_t i;
+
     for(i = 0; i < NUMBER_OF_STARS; i++){
         stars[i].zpos -= stars[i].speed;
 
@@ -638,7 +637,7 @@ void move_star(void)
             continue;
         }
 
-        ctx.canvas[tx + ty * CANVAS_W] = stars[i].color;
+        ctx.canvas[tx + ty * CANVAS_W] = ARGB(0xff, stars[i].color, stars[i].color, stars[i].color);
     }
 }
 #endif

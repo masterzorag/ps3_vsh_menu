@@ -14,7 +14,7 @@ static DrawCtx ctx;
 
 // display values
 static uint32_t unk1 = 0, offset = 0, pitch = 0;
-static int32_t h = 0, w = 0, canvas_x = 0, canvas_y = 0;
+static uint16_t h = 0, w = 0, canvas_x = 0, canvas_y = 0;
 
 
 
@@ -36,7 +36,7 @@ void pause_RSX_rendering()
 ***********************************************************************/
 static void dump_bg(void)
 {
-    int32_t i, k;
+    uint16_t i, k;
     uint64_t *bg = (uint64_t*)ctx.bg;
 
     for(i = 0; i < CANVAS_H; i++)
@@ -125,7 +125,7 @@ static uint32_t mix_color(uint32_t bg, uint32_t fg)
 ***********************************************************************/
 void flip_frame()
 {
-    int32_t i, k;
+    uint16_t i, k;
     uint64_t *canvas = (uint64_t*)ctx.canvas;
 
     for(i = 0; i < CANVAS_H; i++)

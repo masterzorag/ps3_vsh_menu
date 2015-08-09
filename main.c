@@ -70,7 +70,14 @@ static int8_t line = 0;			// current line into menu, init 0 (entry 1:)
 static int8_t view = 0;			// menu view, init 0 (main view)
 
 // max menu entries per view
-static int8_t max_menu[] = {9, 6, 5};
+static int8_t max_menu[] = {9, 7, 5};
+
+static uint32_t bg_color_menu[] =
+{
+    0x7F0000FF,     // blue, semitransparent
+    0x7FFF0000,     // red, semitransparent
+    0x7F00FF00      // green, semitransparent
+};
 
 // menu entry strings
 const char *entry_str[3][9] = {
@@ -91,7 +98,8 @@ const char *entry_str[3][9] = {
     "3: Alpha",
     "4: Red",
     "5: Green",
-    "6: Blue"
+    "6: Blue",
+    "7: Set background color"
 },
 {
     "1: Back to main view",
@@ -114,7 +122,7 @@ static void draw_frame(CellPadData *data)
     // all 32bit colors are ARGB, the framebuffer format
     set_foreground_color(0xFFFFFFFF);     // white, opac
 
-    // draw the right background color for current view
+    /* draw the right background color for current view
     switch(view)
     {
         case 0:
@@ -126,7 +134,10 @@ static void draw_frame(CellPadData *data)
         case 2:
           set_background_color(0x7F00FF00);     // green, semitransparent
           break;
-    }
+    }*/
+
+    set_background_color(bg_color_menu[view]);    
+
     draw_background();
 
     #ifdef HAVE_STARFIELD
@@ -187,6 +198,7 @@ static void draw_frame(CellPadData *data)
 
         sprintf(templn, "%.8x", tmp_c);
         print_text(400, 4, templn);
+
         // testing color macros
         a = GET_A(tmp_c);
         r = GET_R(tmp_c);
@@ -194,6 +206,11 @@ static void draw_frame(CellPadData *data)
         b = GET_B(tmp_c);
         sprintf(templn, "%.2x:%.2x:%.2x:%.2x", a, r, g, b);
         print_text(400, 20, templn);
+
+        double amp = asin(10);
+        sprintf(templn, "%.8u", amp);
+        print_text(400, 36, templn);
+
     }
 
     // ...
@@ -256,8 +273,8 @@ static void do_menu_action(void)
 {
     switch(view)
     {
-        case 0:                    // main menu view
-          switch(line)
+      case 0:                    // main menu view
+        switch(line)
         {
           case 0:                  // "1: Make a single beep"
             buzzer(1);
@@ -296,51 +313,56 @@ static void do_menu_action(void)
             sys_timer_sleep(1);
             vshmain_87BB0001(1);
             break;
-      }
-          break;
-        case 1:                    // second menu view
-          switch(line)
+        }
+        break;
+
+      case 1:                   // second menu view
+        switch(line)
         {
-          case 0:                  // 1: Back to main view"
+          case 0:               // 1: Back to main view"
             view = line = 0;
             break;
-          case 1:                  // 2: screenshot
+          case 1:               // 2: screenshot
             screenshot(1);
             break;
-          case 2:                  // 3: Alpha
+          case 2:               // 3: Alpha
             //...
             break;
-        case 3:                  // 4: Red
+          case 3:               // 4: Red
             //...
             break;
-        case 4:                  // 5: Green
+          case 4:               // 5: Green
             //...
             break;
-        case 5:                  // 6: Blue
+          case 5:               // 6: Blue
             //...
             break;
-          }
-          break;
-        case 2:                    // third menu view
-          switch(line)
+          case 6:               // 7: Set background color
+            bg_color_menu[view] = ARGB(a, r, g, b);
+            break;
+        }
+        break;
+
+      case 2:                   // third menu view
+        switch(line)
         {
-          case 0:                  // "1: Back to main view"
+          case 0:               // "1: Back to main view"
             view = line = 0;
             break;
-          case 1:                  // "2: test string..."
+          case 1:               // "2: test string..."
             //...
             break;
-          case 2:                  // "3: test string..."
+          case 2:               // "3: test string..."
             //...
             break;
-          case 3:                  // "4: test string..."
+          case 3:               // "4: test string..."
             //...
             break;
-          case 4:                  // "5: test string..."
+          case 4:               // "5: test string..."
             //...
             break;
-          }
-          break;
+        }
+        break;
     }
 }
 
@@ -379,7 +401,9 @@ static void vsh_menu_thread(uint64_t arg)
             VSHPadGetData(&pdata);
 		
         // if pad_data and we are in XMB(vshmain_EB757101() == 0)
-        if((pdata.len > 0) && (vshmain_EB757101() == 0))
+        if((pdata.len > 0)
+        && (vshmain_EB757101() == 0)
+        )
         {
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 
@@ -476,6 +500,7 @@ static void vsh_menu_thread(uint64_t arg)
             oldpad = 0;
         }
     }
+
     #ifdef DEBUG
     dbg_fini();
     #endif

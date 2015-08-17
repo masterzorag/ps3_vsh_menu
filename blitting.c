@@ -286,6 +286,9 @@ void print_text(int32_t x, int32_t y, const char *str)
                 // least significant bit first
                 if(bit[i] & (1 << j))
                 {
+                    // draw a shadow, displaced by +2px
+                    ctx.canvas[(x + tx * BITS_IN_BYTE + j +2) + (y + ty +2) * CANVAS_W] = 0xff303030;
+
                     // paint FG pixel
                     ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
                 }

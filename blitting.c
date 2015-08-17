@@ -160,7 +160,8 @@ void set_foreground_color(uint32_t color)
 ***********************************************************************/
 void draw_background()
 {
-    int32_t i, tmp_x = 0, tmp_y = 0;
+    uint16_t tmp_x = 0, tmp_y = 0;
+    uint32_t i;
 
     for(i = 0; i < CANVAS_W * CANVAS_H; i++)
     {

@@ -177,6 +177,7 @@ void draw_background()
     }
 }
 
+
 /***********************************************************************
 * compute x to align text into canvas
 *
@@ -187,6 +188,7 @@ uint16_t get_aligned_x(const char *str, uint8_t align)
 {
     return (CANVAS_W - (strlen(str) * FONT_W)) / align;
 }
+
 
 #ifdef HAVE_PNG_FONT
 /***********************************************************************
@@ -249,8 +251,8 @@ void print_text(int32_t x, int32_t y, const char *str)
         str++;
     }
 }
-#else
 
+#else
 
 /***********************************************************************
 * print text, with data from xbm_font.h
@@ -594,8 +596,6 @@ void draw_circle(int32_t x_c, int32_t y_c, int32_t r)
    Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* note that the code has not been fully optimized */
-
-#include <math.h>
 
 #define NUMBER_OF_STARS 256*6        // max 2^16 for uint16_t
 

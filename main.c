@@ -201,9 +201,11 @@ static void draw_frame(CellPadData *data)
         tmp_x = get_aligned_x(templn, RIGHT);
         print_text(tmp_x, 20, templn);
 
-        double amp = asin(10);
-        sprintf(templn, "%.8u", amp);
-        print_text(400, 36, templn);
+        // testing sine
+        float amp = f_sinf(10);
+        sprintf(templn, "%.4f", amp);
+        tmp_x = get_aligned_x(templn, RIGHT);
+        print_text(tmp_x, 40, templn);
 
     }
 

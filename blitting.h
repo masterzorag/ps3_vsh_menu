@@ -78,6 +78,12 @@ void flip_frame(void);
 void set_background_color(uint32_t color);
 void set_foreground_color(uint32_t color);
 void draw_background(void);
+
+#define LEFT    0   // useless
+#define RIGHT   1
+#define CENTER  2
+uint16_t get_aligned_x(const char *str, uint8_t alignment);
+
 void print_text(int32_t x, int32_t y, const char *str);
 void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h);
 

@@ -122,20 +122,7 @@ static void draw_frame(CellPadData *data)
     // all 32bit colors are ARGB, the framebuffer format
     set_foreground_color(0xFFFFFFFF);     // white, opac
 
-    /* draw the right background color for current view
-    switch(view)
-    {
-        case 0:
-          set_background_color(0x7F0000FF);     // blue, semitransparent
-          break;
-        case 1:
-          set_background_color(0x7FFF0000);     // red, semitransparent
-          break;
-        case 2:
-          set_background_color(0x7F00FF00);     // green, semitransparent
-          break;
-    }*/
-
+    // set the right background color for current view
     set_background_color(bg_color_menu[view]);    
 
     draw_background();
@@ -170,10 +157,12 @@ static void draw_frame(CellPadData *data)
           replaced by terminator, no need to add 1
         */
         char templn[8 * (4 + 1)];
+        uint16_t tmp_x;
 
-        // pointer, size
-        sprintf(templn, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
-        print_text(4, 180, templn);
+        // test text alignment
+        sprintf(templn, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
+        tmp_x = get_aligned_x(templn, CENTER);
+        print_text(tmp_x, 180, templn);
 
         // hexdump first 32 buttons
         uint16_t x = 0, y = 200;
@@ -187,17 +176,21 @@ static void draw_frame(CellPadData *data)
             {
                 // overwrite last ':' with terminator
                 templn[x -1] = '\0';
-                print_text(4, y, templn);
+                tmp_x = get_aligned_x(templn, CENTER);
+                print_text(tmp_x, y, templn);
                 x = 0, y += FONT_H;
             }
         }
 
         // update temp color and print its value
         uint32_t tmp_c = ARGB(a, r, g, b);
+
+        // we start draw text with updated color
         set_foreground_color(tmp_c);
 
         sprintf(templn, "%.8x", tmp_c);
-        print_text(400, 4, templn);
+        tmp_x = get_aligned_x(templn, RIGHT);
+        print_text(tmp_x, 0, templn);
 
         // testing color macros
         a = GET_A(tmp_c);
@@ -205,7 +198,8 @@ static void draw_frame(CellPadData *data)
         g = GET_G(tmp_c);
         b = GET_B(tmp_c);
         sprintf(templn, "%.2x:%.2x:%.2x:%.2x", a, r, g, b);
-        print_text(400, 20, templn);
+        tmp_x = get_aligned_x(templn, RIGHT);
+        print_text(tmp_x, 20, templn);
 
         double amp = asin(10);
         sprintf(templn, "%.8u", amp);
@@ -383,8 +377,8 @@ static void vsh_menu_thread(uint64_t arg)
 
     // wait for XMB, feedback
     sys_timer_sleep(13);
-    //vshtask_notify("sprx running...");
 
+    //vshtask_notify("sprx running...");
     play_rco_sound("system_plugin", "snd_trophy");
 
     #ifdef HAVE_STARFIELD

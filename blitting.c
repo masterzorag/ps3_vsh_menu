@@ -176,6 +176,16 @@ void draw_background()
     }
 }
 
+/***********************************************************************
+* compute x to align text into canvas
+*
+* const char *str = referring string
+* uint8_t align   = CENTER / RIGHT (1/2)
+***********************************************************************/
+uint16_t get_aligned_x(const char *str, uint8_t align)
+{
+    return (CANVAS_W - (strlen(str) * FONT_W)) / align;
+}
 
 #ifdef HAVE_PNG_FONT
 /***********************************************************************

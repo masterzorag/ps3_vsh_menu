@@ -65,9 +65,9 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
-static int8_t menu_running = 0;	// vsh menu off(0) or on(1)
-static int8_t line = 0;			// current line into menu, init 0 (entry 1:)
-static int8_t view = 0;			// menu view, init 0 (main view)
+static int8_t menu_running = 0; // vsh menu off(0) or on(1)
+static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
+static int8_t view = 0;         // menu view, init 0 (main view)
 
 // max menu entries per view
 static int8_t max_menu[] = {9, 7, 5};
@@ -399,7 +399,7 @@ static void vsh_menu_thread(uint64_t arg)
             MyPadGetData(0, &pdata);
         else
             VSHPadGetData(&pdata);
-		
+
         // if pad_data and we are in XMB(vshmain_EB757101() == 0)
         if((pdata.len > 0)
         && (vshmain_EB757101() == 0)
@@ -415,34 +415,34 @@ static void vsh_menu_thread(uint64_t arg)
                     case 0:
                       // main view and start on first entry 
                       view = line = 0;
-    
+
                       //
                       pause_RSX_rendering();
-    
+
                       // create VSH Menu heap memory from memory container 1("app")
                       create_heap(64);       // 64 MB
-    
+
                       // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
                       init_graphic();
-    
+
                       // stop vsh pad
                       start_stop_vsh_pad(0);
 
                       // set menu_running
                       menu_running = 1;
-    
+
                       break;
-    
+
                     // VSH Menu is running, stop VSH Menu
                     case 1:
                       stop_VSH_Menu();
-    
+
                       // restart vsh pad
                       start_stop_vsh_pad(1);
-    
+
                       break;
                 }
-    
+
                 oldpad = 0;
                 sys_timer_usleep(300000);
             }
@@ -532,7 +532,7 @@ static void vsh_menu_stop_thread(uint64_t arg)
         uint64_t exit_code;
         sys_ppu_thread_join(vsh_menu_tid, &exit_code);
     }
-	
+
     sys_ppu_thread_exit(0);
 }
 

@@ -173,3 +173,17 @@ void read_temperature(char *data)
   t2 = t2 >> 24;
   sprintf(data, "CPU:%iC, RSX:%iC", t1, t2);
 }
+
+/***********************************************************************
+* a wrapper to read sys_memory data and compose text string from
+***********************************************************************/
+void read_meminfo(char *data)
+{
+    struct {
+        uint32_t total;
+        uint32_t avail;
+    } meminfo;
+    system_call_1(352, (uint64_t) &meminfo);
+
+    sprintf(data, "memory:%ikb, avail:%ikb", meminfo.total /1024, meminfo.avail /1024);
+}

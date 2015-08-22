@@ -52,4 +52,7 @@ void buzzer(uint8_t mode);
 
 void get_temperature(uint32_t _dev, uint32_t *_temp);
 void read_temperature(char *data);
-#endif // __MISC_H__ 
+
+void read_meminfo(char *data);
+
+#endif // __MISC_H__

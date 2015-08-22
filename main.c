@@ -199,6 +199,9 @@ static void draw_frame(CellPadData *data)
         tmp_x = get_aligned_x(templn, RIGHT) -4;
         print_text(tmp_x, 4 + (FONT_H +1), templn);
 
+        read_meminfo(templn);
+        tmp_x = get_aligned_x(templn, RIGHT) -4;
+        print_text(tmp_x, CANVAS_H - (FONT_H +1) -4, templn); // additional px from lower border
     }
 
     // ...
@@ -375,6 +378,7 @@ static void vsh_menu_thread(uint64_t arg)
     sys_timer_sleep(13);
 
     //vshtask_notify("sprx running...");
+
     play_rco_sound("system_plugin", "snd_trophy");
 
     #ifdef HAVE_STARFIELD

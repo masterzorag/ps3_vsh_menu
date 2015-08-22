@@ -168,7 +168,6 @@ void draw_background()
         ctx.canvas[i] = mix_color(ctx.bg[i], ctx.bg_color);
 
         tmp_x++;
-
         if(tmp_x == CANVAS_W)
         {
             tmp_x = 0;
@@ -182,7 +181,7 @@ void draw_background()
 * compute x to align text into canvas
 *
 * const char *str = referring string
-* uint8_t align   = CENTER / RIGHT (1/2)
+* uint8_t align   = RIGHT / CENTER (1/2)
 ***********************************************************************/
 uint16_t get_aligned_x(const char *str, uint8_t align)
 {
@@ -238,7 +237,6 @@ void print_text(int32_t x, int32_t y, const char *str)
                 }
 
                 tmp_x++;
-
                 if(tmp_x == char_w)
                 {
                     tmp_x = 0;
@@ -287,7 +285,7 @@ void print_text(int32_t x, int32_t y, const char *str)
                 if(bit[i] & (1 << j))
                 {
                     // draw a shadow, displaced by +2px
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j +2) + (y + ty +2) * CANVAS_W] = 0xff303030;
+                    ctx.canvas[(x + tx * BITS_IN_BYTE + j +2) + (y + ty +2) * CANVAS_W] = 0xFF303030;
 
                     // paint FG pixel
                     ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
@@ -298,8 +296,8 @@ void print_text(int32_t x, int32_t y, const char *str)
                     //ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.bg_color;
                 }
             }
-            tx++;
 
+            tx++;
             if(tx == (FONT_W / BITS_IN_BYTE))
             {
                 tx = 0, ty++;        // use to decrease gradient
@@ -415,7 +413,7 @@ void screenshot(uint8_t mode)
             bmp_buf[idx   ] = tmp_buf[(i*w+k)*4 +3];  // R
             bmp_buf[idx +1] = tmp_buf[(i*w+k)*4 +2];  // G
             bmp_buf[idx +2] = tmp_buf[(i*w+k)*4 +1];  // B
-            idx+=3;
+            idx += 3;
         }
     }
 
@@ -439,8 +437,8 @@ void screenshot(uint8_t mode)
     int32_t rest = (w*3) % 4;
     if(rest)
          pad = 4 - rest;
-    fseek(fd, pad, SEEK_CUR);
 
+    fseek(fd, pad, SEEK_CUR);
     fclose(fd);
     sys_memory_free((sys_addr_t)sys_mem);
 }
@@ -600,7 +598,7 @@ void draw_circle(int32_t x_c, int32_t y_c, int32_t r)
 
 /* note that the code has not been fully optimized */
 
-#define NUMBER_OF_STARS 256*6        // max 2^16 for uint16_t
+#define NUMBER_OF_STARS 256*2        // max 2^16 for uint16_t
 
 static STAR stars[NUMBER_OF_STARS];
 
@@ -625,7 +623,7 @@ void init_once(/* stars, first run */)
 {
   uint16_t i;
   for(i = 0; i < NUMBER_OF_STARS; i++) 
-    init_star(stars + i, i + 1);
+    init_star(stars +i, i +1);
 }
 
 void move_star(void)
@@ -633,20 +631,21 @@ void move_star(void)
     int16_t tx, ty;
     uint16_t i;
 
-    for(i = 0; i < NUMBER_OF_STARS; i++){
+    for(i = 0; i < NUMBER_OF_STARS; i++)
+    {
         stars[i].zpos -= stars[i].speed;
 
-        if(stars[i].zpos <= 0) init_star(stars + i, i + 1);
+        if(stars[i].zpos <= 0) init_star(stars +i, i +1);
 
         /* compute 3D position */
-        tx = (stars[i].xpos / stars[i].zpos) + (CANVAS_W >> 1);
-        ty = (stars[i].ypos / stars[i].zpos) + (CANVAS_H >> 1);
+        tx = (stars[i].xpos / stars[i].zpos) + (CANVAS_W >>1);
+        ty = (stars[i].ypos / stars[i].zpos) + (CANVAS_H >>1);
 
         /* check if a star leaves the screen */
-        if(tx < 0 || tx > CANVAS_W - 1
-        || ty < 0 || ty > CANVAS_H - 1)
+        if(tx < 0 || tx > CANVAS_W -1
+        || ty < 0 || ty > CANVAS_H -1)
         {
-            init_star(stars + i, i + 1);
+            init_star(stars +i, i +1);
             continue;
         }
 

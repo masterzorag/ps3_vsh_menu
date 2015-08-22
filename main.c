@@ -301,13 +301,13 @@ static void do_menu_action(void)
             stop_VSH_Menu();
             delete_turnoff_flag();
             sys_timer_sleep(1);
-            vshmain_87BB0001(2);
+            shutdown_reset(2);
             break;
           case 8:                  // "9: Shutdown PS3"
             stop_VSH_Menu();
             delete_turnoff_flag();
             sys_timer_sleep(1);
-            vshmain_87BB0001(1);
+            shutdown_reset(1);
             break;
         }
         break;

@@ -28,7 +28,7 @@
 #include "network.h"
 #endif
 
-SYS_MODULE_INFO(VSH_MENU, 0, 1, 0);
+SYS_MODULE_INFO (VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
 SYS_MODULE_STOP (vsh_menu_stop);
 
@@ -140,7 +140,7 @@ static void draw_frame(CellPadData *data)
     {
         i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 
-        print_text(4, 8 + (FONT_H * (i + 1)), entry_str[view][i]);
+        print_text(4, 8 + ((FONT_H +1) * (i + 1)), entry_str[view][i]);
     }
 
     // (re)set back after draw last line
@@ -178,7 +178,7 @@ static void draw_frame(CellPadData *data)
                 templn[x -1] = '\0';
                 tmp_x = get_aligned_x(templn, CENTER);
                 print_text(tmp_x, y, templn);
-                x = 0, y += FONT_H;
+                x = 0, y += (FONT_H +1);        // additional px to next line
             }
         }
 
@@ -190,14 +190,14 @@ static void draw_frame(CellPadData *data)
 
         // print its value 
         sprintf(templn, "%.8x", tmp_c);
-        tmp_x = get_aligned_x(templn, RIGHT);
-        print_text(tmp_x, 0, templn);
+        tmp_x = get_aligned_x(templn, RIGHT) -4; // additional px from R margin
+        print_text(tmp_x, 4, templn);
 
         // testing sine
         float amp = f_sinf(10);
         sprintf(templn, "%.4f", amp);
-        tmp_x = get_aligned_x(templn, RIGHT);
-        print_text(tmp_x, 40, templn);
+        tmp_x = get_aligned_x(templn, RIGHT) -4;
+        print_text(tmp_x, 4 + (FONT_H +1), templn);
 
     }
 

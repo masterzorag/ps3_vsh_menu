@@ -99,7 +99,7 @@ const char *entry_str[3][9] = {
     "4: Red",
     "5: Green",
     "6: Blue",
-    "7: Set background color"
+    "7: test"
 },
 {
     "1: Back to main view",
@@ -182,24 +182,16 @@ static void draw_frame(CellPadData *data)
             }
         }
 
-        // update temp color and print its value
+        // update temp color
         uint32_t tmp_c = ARGB(a, r, g, b);
 
-        // we start draw text with updated color
+        // start draw text with updated color
         set_foreground_color(tmp_c);
 
+        // print its value 
         sprintf(templn, "%.8x", tmp_c);
         tmp_x = get_aligned_x(templn, RIGHT);
         print_text(tmp_x, 0, templn);
-
-        // testing color macros
-        a = GET_A(tmp_c);
-        r = GET_R(tmp_c);
-        g = GET_G(tmp_c);
-        b = GET_B(tmp_c);
-        sprintf(templn, "%.2x:%.2x:%.2x:%.2x", a, r, g, b);
-        tmp_x = get_aligned_x(templn, RIGHT);
-        print_text(tmp_x, 20, templn);
 
         // testing sine
         float amp = f_sinf(10);
@@ -256,6 +248,9 @@ static void do_leftright_action(uint16_t curpad)
       default:      // do nothing
         return;
     }
+
+    // update second screen bg_color
+    bg_color_menu[view] = ARGB(a, r, g, b);
 
     play_rco_sound("system_plugin", "snd_cursor");
   }
@@ -333,8 +328,7 @@ static void do_menu_action(void)
           case 5:               // 6: Blue
             //...
             break;
-          case 6:               // 7: Set background color
-            bg_color_menu[view] = ARGB(a, r, g, b);
+          case 6:               // 7: test
             break;
         }
         break;
@@ -386,6 +380,12 @@ static void vsh_menu_thread(uint64_t arg)
     #ifdef HAVE_STARFIELD
     init_once(/* stars */);
     #endif
+
+    // custom bg_color init
+    a = GET_A(bg_color_menu[1]);
+    r = GET_R(bg_color_menu[1]);
+    g = GET_G(bg_color_menu[1]);
+    b = GET_B(bg_color_menu[1]);
 
     while(1)
     {

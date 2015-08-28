@@ -24,6 +24,7 @@
 #include "mem.h"
 #include "blitting.h"
 
+
 #ifdef DEBUG
 #include "network.h"
 #endif
@@ -127,8 +128,7 @@ static void draw_frame(CellPadData *data)
     draw_background();
 
     #ifdef HAVE_STARFIELD
-    // first draw stars, keeping them under text lines
-    move_star();
+    draw_stars();       // to keep them under text lines
     #endif
 
     // print headline string, coordinates in canvas

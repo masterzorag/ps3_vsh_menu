@@ -9,7 +9,8 @@ CRT_TAIL += $(shell ppu-lv2-gcc -print-file-name'='crtend.o)
 CRT_HEAD += $(shell ppu-lv2-gcc -print-file-name'='ecrtn.o)
 
 
-PPU_SRCS  = mem.c misc.c png_dec.c blitting.c main.c
+PPU_SRCS  = mem.c misc.c png_dec.c blitting.c starfield.c main.c
+
 #FOR_DEBUG:
 PPU_SRCS += network.c
 

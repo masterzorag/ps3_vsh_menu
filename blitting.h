@@ -99,15 +99,7 @@ void screenshot(uint8_t mode);
 //void draw_circle(int32_t x_c, int32_t y_c, int32_t r);
 
 #ifdef HAVE_STARFIELD
-typedef struct _STAR{
-    float   xpos, ypos;
-    int16_t zpos, speed;
-    uint8_t color;
-} STAR;
-
-void init_star(STAR *star, const uint16_t i);
-void init_once(void);
-void move_star(void);
+void draw_stars(void);
 #endif
 
 #endif // __BLITT_H__

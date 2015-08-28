@@ -29,6 +29,15 @@
 #include "network.h"
 #endif
 
+#ifdef HAVE_SSCROLLER
+#include "scroller.h"
+#endif
+
+#ifdef HAVE_STARFIELD
+#include "starfield.h"
+#endif
+
+
 SYS_MODULE_INFO (VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
 SYS_MODULE_STOP (vsh_menu_stop);
@@ -211,6 +220,12 @@ static void draw_frame(CellPadData *data)
     } //end if(view == 2)
 
     // ...
+
+    #ifdef HAVE_SSCROLLER
+    // testing sine in a scroller
+    draw_text(330);
+    move_text();
+    #endif
 
 }
 

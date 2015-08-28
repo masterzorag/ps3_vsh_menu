@@ -16,10 +16,13 @@
 #else
 #define FONT_W        16                    // use hardcoded xbm_font
 #define FONT_H        16
+#define SHADOW_PX     2                     // lower-right text shadow in pixel
 #endif
 
+#define FONT_D        1                     // distance to next char
+#define BORD_D        4                     // distance from canvas border
 // additional png bitmaps
-#define PNG_MAX    4
+#define PNG_MAX       4
 
 // canvas constants
 // the values for canvas width and height can be changed for make a smaller or larger
@@ -80,15 +83,16 @@ void set_foreground_color(uint32_t color);
 void draw_background(void);
 void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h);
 
-#define LEFT    0   // useless
-#define RIGHT   1
-#define CENTER  2
+// text
+#define LEFT      0   // useless
+#define RIGHT     1
+#define CENTER    2
 uint16_t get_aligned_x(const char *str, uint8_t alignment);
-
 void print_text(int32_t x, int32_t y, const char *str);
 
 void screenshot(uint8_t mode);
 
+// primitives
 //void draw_pixel(int32_t x, int32_t y);
 //void draw_line(int32_t x, int32_t y, int32_t x2, int32_t y2);
 //void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);

@@ -102,15 +102,13 @@ const char *entry_str[3][9] = {
     "7: test"
 },
 {
-    "1: Back to main view",
-    "2: test string...",
-    "3: test string...",
-    "4: test string...",
-    "5: test string..."
+    "1: bg 1",
+    "2: bg 2",
+    "3: bg 3",
+    "4: fg 1",
+    "5: Back to main view"
 }
 };
-
-
 
 /***********************************************************************
 * draw a frame
@@ -118,12 +116,13 @@ const char *entry_str[3][9] = {
 static void draw_frame(CellPadData *data)
 {
     int8_t i;
+    uint16_t tx, ty;
 
     // all 32bit colors are ARGB, the framebuffer format
     set_foreground_color(0xFFFFFFFF);     // white, opac
 
     // set the right background color for current view
-    set_background_color(bg_color_menu[view]);    
+    set_background_color(bg_color_menu[view]);
 
     draw_background();
 
@@ -133,14 +132,14 @@ static void draw_frame(CellPadData *data)
     #endif
 
     // print headline string, coordinates in canvas
-    print_text(4, 4, "PS3 VSH Menu");
+    print_text(BORD_D, BORD_D, "PS3 VSH Menu");
 
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
     {
         i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 
-        print_text(4, 8 + ((FONT_H +1) * (i + 1)), entry_str[view][i]);
+        print_text(BORD_D, 8 + ((FONT_H + FONT_D) * (i + 1)), entry_str[view][i]);
     }
 
     // (re)set back after draw last line
@@ -151,47 +150,52 @@ static void draw_frame(CellPadData *data)
     // second menu, red one:
     if(view == 1)
     {
-        /*
-          hexdump pad data: store in text 8 buttons in a row
-          in "%.4x" format plus 1 for ':', last one will be
-          replaced by terminator, no need to add 1
-        */
-        char templn[8 * (4 + 1)];
-        uint16_t tmp_x;
-
+        /* hexdump pad data: store in text 8 buttons in a row
+           in "%.4x" format plus 1 for ':', last one will be
+           replaced by terminator, no need to add 1 */
+        char tmp_ln[8 * (4 + 1)];
+        
         // test text alignment
-        sprintf(templn, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
-        tmp_x = get_aligned_x(templn, CENTER);
-        print_text(tmp_x, 180, templn);
+        sprintf(tmp_ln, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
+        tx = get_aligned_x(tmp_ln, CENTER);
+        print_text(tx, 180, tmp_ln);
 
         // hexdump first 32 buttons
-        uint16_t x = 0, y = 200;
+        uint16_t x = 0, ty = 200;
         for(i = 0; i < 32; i++)
         {
-            sprintf(&templn[x], "%.4x:", data->button[i]);
+            sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
             x += 5;
-            templn[x] = '\0';
+            tmp_ln[x] = '\0';
 
             if(x %8 == 0)
             {
                 // overwrite last ':' with terminator
-                templn[x -1] = '\0';
-                tmp_x = get_aligned_x(templn, CENTER);
-                print_text(tmp_x, y, templn);
-                x = 0, y += (FONT_H +1);        // additional px to next line
+                tmp_ln[x -1] = '\0';
+                tx = get_aligned_x(tmp_ln, CENTER);
+                print_text(tx, ty, tmp_ln);
+                x = 0, ty += (FONT_H + FONT_D);            // additional px to next line
             }
         }
 
-        // update temp color
-        uint32_t tmp_c = ARGB(a, r, g, b);
+        // sys memory stats
+        read_meminfo(tmp_ln);
+        tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
+        print_text(tx, CANVAS_H - (FONT_H + FONT_D) - BORD_D, tmp_ln); // from bottom
 
-        // start draw text with updated color
-        set_foreground_color(tmp_c);
+    }
+    else
+    if(view == 2)   // only on third view
+    {
+        char tmp_ln[8 + 1];
 
-        // print its value 
-        sprintf(templn, "%.8x", tmp_c);
-        tmp_x = get_aligned_x(templn, RIGHT) -4; // additional px from R margin
-        print_text(tmp_x, 4, templn);
+        // print all bg_color entries, and the current selected entry in green
+        tx = CANVAS_W - (8 * FONT_W) - BORD_D;   // additional px from R margin
+        for(i = 0; i < 3; i++)
+        {
+            sprintf(tmp_ln, "%.8x", bg_color_menu[i]);
+            ty = 8 + ((FONT_H + FONT_D) * (i + 1));
+            print_text(tx, ty, tmp_ln);
 
         // testing sine
         float amp = f_sinf(10);
@@ -199,10 +203,12 @@ static void draw_frame(CellPadData *data)
         tmp_x = get_aligned_x(templn, RIGHT) -4;
         print_text(tmp_x, 4 + (FONT_H +1), templn);
 
-        read_meminfo(templn);
-        tmp_x = get_aligned_x(templn, RIGHT) -4;
-        print_text(tmp_x, CANVAS_H - (FONT_H +1) -4, templn); // additional px from lower border
-    }
+                // (re)set back after marked text
+                set_foreground_color(0xFFFFFFFF);
+            }
+        }
+        
+    } //end if(view == 2)
 
     // ...
 
@@ -339,8 +345,7 @@ static void do_menu_action(void)
       case 2:                   // third menu view
         switch(line)
         {
-          case 0:               // "1: Back to main view"
-            view = line = 0;
+          case 0:               // "1: bg 0"
             break;
           case 1:               // "2: test string..."
             //...

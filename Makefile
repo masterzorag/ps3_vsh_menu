@@ -9,7 +9,8 @@ CRT_TAIL += $(shell ppu-lv2-gcc -print-file-name'='crtend.o)
 CRT_HEAD += $(shell ppu-lv2-gcc -print-file-name'='ecrtn.o)
 
 
-PPU_SRCS  = mem.c misc.c png_dec.c blitting.c main.c
+PPU_SRCS  = mem.c misc.c png_dec.c blitting.c scroller.c starfield.c main.c
+
 #FOR_DEBUG:
 PPU_SRCS += network.c
 
@@ -44,6 +45,7 @@ PPU_CFLAGS += -Os -ffunction-sections -fdata-sections \
 PPU_CFLAGS += -DDEBUG
 #PPU_CFLAGS += -DHAVE_PNG_FONT
 PPU_CFLAGS += -DHAVE_STARFIELD
+PPU_CFLAGS += -DHAVE_SSCROLLER
 
 
 CLEANFILES = ./$(PPU_SPRX_TARGET)

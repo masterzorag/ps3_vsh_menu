@@ -24,9 +24,19 @@
 #include "mem.h"
 #include "blitting.h"
 
+
 #ifdef DEBUG
 #include "network.h"
 #endif
+
+#ifdef HAVE_SSCROLLER
+#include "scroller.h"
+#endif
+
+#ifdef HAVE_STARFIELD
+#include "starfield.h"
+#endif
+
 
 SYS_MODULE_INFO (VSH_MENU, 0, 1, 0);
 SYS_MODULE_START(vsh_menu_start);
@@ -41,8 +51,8 @@ int32_t vsh_menu_start(uint64_t arg);
 int32_t vsh_menu_stop(void);
 
 
-// a temporary color, to preview text in realtime
-uint8_t a, r, g, b;
+// temp ARGB color components, to update color on pad input
+uint8_t color_comp[4];
 
 /***********************************************************************
 * sys_ppu_thread_exit, direct over syscall
@@ -68,6 +78,8 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 static int8_t menu_running = 0; // vsh menu off(0) or on(1)
 static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
 static int8_t view = 0;         // menu view, init 0 (main view)
+static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
+
 
 // max menu entries per view
 static int8_t max_menu[] = {9, 7, 5};
@@ -75,7 +87,7 @@ static int8_t max_menu[] = {9, 7, 5};
 static uint32_t bg_color_menu[] =
 {
     0x7F0000FF,     // blue, semitransparent
-    0x7FFF0000,     // red, semitransparent
+    0x70000000,     // black, semitransparent
     0x7F00FF00      // green, semitransparent
 };
 
@@ -102,15 +114,13 @@ const char *entry_str[3][9] = {
     "7: test"
 },
 {
-    "1: Back to main view",
-    "2: test string...",
-    "3: test string...",
-    "4: test string...",
-    "5: test string..."
+    "1: bg 1",
+    "2: bg 2",
+    "3: bg 3",
+    "4: fg 1",
+    "5: Back to main view"
 }
 };
-
-
 
 /***********************************************************************
 * draw a frame
@@ -118,29 +128,29 @@ const char *entry_str[3][9] = {
 static void draw_frame(CellPadData *data)
 {
     int8_t i;
+    uint16_t tx, ty;
 
     // all 32bit colors are ARGB, the framebuffer format
     set_foreground_color(0xFFFFFFFF);     // white, opac
 
     // set the right background color for current view
-    set_background_color(bg_color_menu[view]);    
+    set_background_color(bg_color_menu[view]);
 
     draw_background();
 
     #ifdef HAVE_STARFIELD
-    // first draw stars, keeping them under text lines
-    move_star();
+    draw_stars();       // to keep them under text lines
     #endif
 
     // print headline string, coordinates in canvas
-    print_text(4, 4, "PS3 VSH Menu");
+    print_text(BORD_D, BORD_D, "PS3 VSH Menu");
 
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
     {
         i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
 
-        print_text(4, 8 + ((FONT_H +1) * (i + 1)), entry_str[view][i]);
+        print_text(BORD_D, 8 + ((FONT_H + FONT_D) * (i + 1)), entry_str[view][i]);
     }
 
     // (re)set back after draw last line
@@ -151,60 +161,74 @@ static void draw_frame(CellPadData *data)
     // second menu, red one:
     if(view == 1)
     {
-        /*
-          hexdump pad data: store in text 8 buttons in a row
-          in "%.4x" format plus 1 for ':', last one will be
-          replaced by terminator, no need to add 1
-        */
-        char templn[8 * (4 + 1)];
-        uint16_t tmp_x;
-
+        /* hexdump pad data: store in text 8 buttons in a row
+           in "%.4x" format plus 1 for ':', last one will be
+           replaced by terminator, no need to add 1 */
+        char tmp_ln[8 * (4 + 1)];
+        
         // test text alignment
-        sprintf(templn, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
-        tmp_x = get_aligned_x(templn, CENTER);
-        print_text(tmp_x, 180, templn);
+        sprintf(tmp_ln, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
+        tx = get_aligned_x(tmp_ln, CENTER);
+        print_text(tx, 180, tmp_ln);
 
         // hexdump first 32 buttons
-        uint16_t x = 0, y = 200;
+        uint16_t x = 0, ty = 200;
         for(i = 0; i < 32; i++)
         {
-            sprintf(&templn[x], "%.4x:", data->button[i]);
+            sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
             x += 5;
-            templn[x] = '\0';
+            tmp_ln[x] = '\0';
 
             if(x %8 == 0)
             {
                 // overwrite last ':' with terminator
-                templn[x -1] = '\0';
-                tmp_x = get_aligned_x(templn, CENTER);
-                print_text(tmp_x, y, templn);
-                x = 0, y += (FONT_H +1);        // additional px to next line
+                tmp_ln[x -1] = '\0';
+                tx = get_aligned_x(tmp_ln, CENTER);
+                print_text(tx, ty, tmp_ln);
+                x = 0, ty += (FONT_H + FONT_D);            // additional px to next line
             }
         }
 
-        // update temp color
-        uint32_t tmp_c = ARGB(a, r, g, b);
+        // sys memory stats
+        read_meminfo(tmp_ln);
+        tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
+        print_text(tx, CANVAS_H - (FONT_H + FONT_D) - BORD_D, tmp_ln); // from bottom
 
-        // start draw text with updated color
-        set_foreground_color(tmp_c);
-
-        // print its value 
-        sprintf(templn, "%.8x", tmp_c);
-        tmp_x = get_aligned_x(templn, RIGHT) -4; // additional px from R margin
-        print_text(tmp_x, 4, templn);
-
-        // testing sine
-        float amp = f_sinf(10);
-        sprintf(templn, "%.4f", amp);
-        tmp_x = get_aligned_x(templn, RIGHT) -4;
-        print_text(tmp_x, 4 + (FONT_H +1), templn);
-
-        read_meminfo(templn);
-        tmp_x = get_aligned_x(templn, RIGHT) -4;
-        print_text(tmp_x, CANVAS_H - (FONT_H +1) -4, templn); // additional px from lower border
     }
+    else
+    if(view == 2)   // only on third view
+    {
+        char tmp_ln[8 + 1];
+
+        // print all bg_color entries, and the current selected entry in green
+        tx = CANVAS_W - (8 * FONT_W) - BORD_D;   // additional px from R margin
+        for(i = 0; i < 3; i++)
+        {
+            sprintf(tmp_ln, "%.8x", bg_color_menu[i]);
+            ty = 8 + ((FONT_H + FONT_D) * (i + 1));
+            print_text(tx, ty, tmp_ln);
+
+            if(i == line && col > 0)  // mark in green selected color component
+            {
+                char tmp_cc[2 + 1];
+                set_foreground_color(0xFF00FF00);
+                strncpy(tmp_cc, &tmp_ln[(col -1) *2], 2); // one of AA:RR:GG:BB
+                print_text(tx + ((col -1) *2 * FONT_W), ty, tmp_cc);
+
+                // (re)set back after marked text
+                set_foreground_color(0xFFFFFFFF);
+            }
+        }
+        
+    } //end if(view == 2)
 
     // ...
+
+    #ifdef HAVE_SSCROLLER
+    // testing sine in a scroller
+    draw_text(330);
+    move_text();
+    #endif
 
 }
 
@@ -227,36 +251,70 @@ static void stop_VSH_Menu(void)
 
 
 /***********************************************************************
+* execute a menu action, based on coloumn(current selected menu entry)
+***********************************************************************/
+static void do_updown_action(uint16_t curpad)
+{
+    bool flag = 0;
+    uint8_t *value, step, max;
+
+    if(col)
+    { // A, R, G, B: 0x00-0xFF
+      color_comp[0] = GET_A(bg_color_menu[line]), color_comp[1] = GET_R(bg_color_menu[line]);
+      color_comp[2] = GET_G(bg_color_menu[line]), color_comp[3] = GET_B(bg_color_menu[line]);
+      value = (uint8_t*)&color_comp[col -1];
+      step  = -2, max = 0xFF;
+    }
+    else
+    { // line: 0-max_menu[view]
+      value = (uint8_t*)&line;
+      step  = 1, max = max_menu[view] -1;
+    }
+
+    // update value
+    if(curpad & PAD_UP)
+    {
+        if((col
+        && *value == 0)
+        || *value >  0) { *value -= step, flag = 1; }
+    }
+    else   // & PAD_DOWN
+    {
+        if((col
+        && *value == max)
+        || *value <  max) { *value += step, flag = 1; }
+    }
+
+    if(flag)
+    {   // update selected bg_color
+        if(col) bg_color_menu[line] = ARGB(color_comp[0], color_comp[1],
+                                           color_comp[2], color_comp[3]);
+
+        play_rco_sound("system_plugin", "snd_cursor");
+    }
+}
+
+/***********************************************************************
 * execute a menu action, based on line(current selected menu entry)
 ***********************************************************************/
 static void do_leftright_action(uint16_t curpad)
 {
-  if(view == 1)     // only on second screen
+  if((view == 2)    // only on third view
+  && (line < 3))    // only for 3 bg_color
   {
-    switch(line)
-    {
-      case 2:       // 3: Alpha
-        (curpad & PAD_LEFT) ? a-- : a++;
-        break;
-      case 3:       // 4: Red
-        (curpad & PAD_LEFT) ? r-- : r++;
-        break;
-      case 4:       // 5: Green
-        (curpad & PAD_LEFT) ? g-- : g++;
-        break;
-      case 5:       // 6: Blue
-        (curpad & PAD_LEFT) ? b-- : b++;
-        break;
+      bool flag = 0;
+      if(curpad & PAD_LEFT)
+      {
+          if(col > 0) { col--, flag = 1; }
+      }
+      else   // & PAD_RIGHT
+      {
+          if(col < 4) { col++, flag = 1; }
+      }
 
-      default:      // do nothing
-        return;
-    }
-
-    // update second screen bg_color
-    bg_color_menu[view] = ARGB(a, r, g, b);
-
-    play_rco_sound("system_plugin", "snd_cursor");
+      if(flag) play_rco_sound("system_plugin", "snd_cursor");
   }
+
 }
 
 
@@ -282,7 +340,8 @@ static void do_menu_action(void)
             break;
           case 3:                  // "4: Enter third menu view"
             view = 2;              // change menu view
-            line = 0;              // on start entry
+            line = col = 0;        // on start entry, for colors
+            color_comp[0] = GET_A(bg_color_menu[line]);
             break;
           case 4:                  // "5: Play trophy sound"
             play_rco_sound("system_plugin", "snd_trophy");
@@ -339,8 +398,7 @@ static void do_menu_action(void)
       case 2:                   // third menu view
         switch(line)
         {
-          case 0:               // "1: Back to main view"
-            view = line = 0;
+          case 0:               // "1: bg 0"
             break;
           case 1:               // "2: test string..."
             //...
@@ -351,8 +409,8 @@ static void do_menu_action(void)
           case 3:               // "4: test string..."
             //...
             break;
-          case 4:               // "5: test string..."
-            //...
+          case 4:               // "5: Back to main view"
+            view = line = col = 0;
             break;
         }
         break;
@@ -385,12 +443,6 @@ static void vsh_menu_thread(uint64_t arg)
     init_once(/* stars */);
     #endif
 
-    // custom bg_color init
-    a = GET_A(bg_color_menu[1]);
-    r = GET_R(bg_color_menu[1]);
-    g = GET_G(bg_color_menu[1]);
-    b = GET_B(bg_color_menu[1]);
-
     while(1)
     {
         // if VSH Menu is running, we get pad data over our MyPadGetData()
@@ -407,14 +459,15 @@ static void vsh_menu_thread(uint64_t arg)
         {
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 
-            if((curpad & PAD_SELECT) && (curpad != oldpad))
+            if((curpad != oldpad)
+            && (curpad & PAD_L3))        // menu hotkey
             {
                 switch(menu_running)
                 {
                     // VSH Menu not running, start VSH Menu
                     case 0:
                       // main view and start on first entry 
-                      view = line = 0;
+                      view = line = col = 0;
 
                       //
                       pause_RSX_rendering();
@@ -461,32 +514,11 @@ static void vsh_menu_thread(uint64_t arg)
 
                 if(curpad != oldpad)
                 {
+                    if(curpad & (PAD_UP | PAD_DOWN)) do_updown_action(curpad);
 
-                    if(curpad & PAD_UP)
-                    {
-                        if(line <= 0){
-                            line = 0;
-                        }else{
-                            line--;
-                            play_rco_sound("system_plugin", "snd_cursor");
-                        }
-                    }
-
-                    if(curpad & PAD_DOWN)
-                    {
-                        if(line >= max_menu[view]-1){
-                            line = max_menu[view]-1;
-                        }else{
-                            line++;
-                            play_rco_sound("system_plugin", "snd_cursor");
-                        }
-                    }
-
-                    if(curpad & PAD_LEFT
-                    || curpad & PAD_RIGHT) do_leftright_action(curpad);
+                    if(curpad & (PAD_LEFT | PAD_RIGHT)) do_leftright_action(curpad);
 
                     if(curpad & PAD_CROSS) do_menu_action();
-
                 }
 
                 // ...

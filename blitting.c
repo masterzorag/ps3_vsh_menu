@@ -7,7 +7,6 @@
 #include <cell/rtc.h>
 
 
-
 // graphic buffers and drawing context
 static Buffer buf[2];
 static DrawCtx ctx;
@@ -15,7 +14,6 @@ static DrawCtx ctx;
 // display values
 static uint32_t unk1 = 0, offset = 0, pitch = 0;
 static uint16_t h = 0, w = 0, canvas_x = 0, canvas_y = 0;
-
 
 
 /***********************************************************************
@@ -284,8 +282,8 @@ void print_text(int32_t x, int32_t y, const char *str)
                 // least significant bit first
                 if(bit[i] & (1 << j))
                 {
-                    // draw a shadow, displaced by +2px
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j +2) + (y + ty +2) * CANVAS_W] = 0xFF303030;
+                    // draw a shadow, displaced by + SHADOW_PX
+                    ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W] = 0xFF303030;
 
                     // paint FG pixel
                     ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
@@ -342,7 +340,6 @@ void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t 
             ctx.png[idx].addr[(png_x + png_y * ctx.png[idx].w) + (tmp_x + tmp_y * ctx.png[idx].w)]);
 
         tmp_x++;
-
         if(tmp_x == w)
         {
             tmp_x = 0;
@@ -352,6 +349,11 @@ void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t 
 }
 
 
+/***********************************************************************
+* xmb screenshot
+*
+* uint8_t mode = 0(XMB only), 1(XMB + menu)
+***********************************************************************/
 uint8_t bmp_header[] = {
   0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x28, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x18, 0x00, 0x00, 0x00,
@@ -359,12 +361,6 @@ uint8_t bmp_header[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-
-/***********************************************************************
-* xmb screenshot
-*
-* uint8_t mode = 0(XMB only), 1(XMB + menu)
-***********************************************************************/
 void screenshot(uint8_t mode)
 {
     FILE *fd = NULL;
@@ -374,7 +370,6 @@ void screenshot(uint8_t mode)
     sys_memory_container_t mc_app = (sys_memory_container_t)-1;
     CellRtcDateTime t;
     char path[128];
-
 
     // alloc buffers
     mc_app = vsh_memory_container_by_id(1);
@@ -395,7 +390,7 @@ void screenshot(uint8_t mode)
         for(k = 0; k < w/2; k++)
         {
             dump_buf[k + i * w/2] = *(uint64_t*)(OFFSET(k*2, i));
-            
+
             if(mode == 0)
                 if((k*2 >= canvas_x) && (k*2 < canvas_x + CANVAS_W) && (i >= canvas_y) && (i < canvas_y + CANVAS_H))
                     dump_buf[k + i * w/2] = bg[(((i - canvas_y) * CANVAS_W) + ((k*2) - canvas_x)) /2];
@@ -444,6 +439,15 @@ void screenshot(uint8_t mode)
 }
 
 
+#ifdef HAVE_STARFIELD
+#include "starfield.h"
+void draw_stars()
+{
+    move_star((uint32_t*)ctx.canvas);
+}
+#endif
+
+
 // some primitives...
 /***********************************************************************
 * draw a single pixel,
@@ -482,14 +486,14 @@ void draw_line(int32_t x, int32_t y, int32_t x2, int32_t y2)
     {
         l = abs(h);
         s = abs(w);
-        
+
     if(h < 0) dy2 = -1; else if(h > 0) dy2 = 1;
 
         dx2 = 0;
     }
 
     int32_t num = l >> 1;
-    
+
     for(i = 0; i <= l; i++)
     {
         ctx.canvas[x + y * CANVAS_W] = ctx.fg_color;
@@ -563,7 +567,7 @@ void draw_circle(int32_t x_c, int32_t y_c, int32_t r)
     while(x < y)
     {
         x++;
-        
+
         if(p < 0)
         {
             p += 2 * x + 1;
@@ -573,83 +577,9 @@ void draw_circle(int32_t x_c, int32_t y_c, int32_t r)
             y--;
             p += 2 * (x - y) + 1;
         }
-        
+
         circle_points(x_c, y_c, x, y);
     }
 }*/
 
 
-#ifdef HAVE_STARFIELD
-/* Copyright (C) 2002 W.P. van Paassen - peter@paassen.tmfweb.nl
-
-   This program is free software; you can redistribute it and/or modify it under
-   the terms of the GNU General Public License as published by the Free
-   Software Foundation; either version 2 of the License, or (at your
-   option) any later version.
-
-   This program is distributed in the hope that it will be useful, but WITHOUT
-   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-   for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-/* note that the code has not been fully optimized */
-
-#define NUMBER_OF_STARS 256*2        // max 2^16 for uint16_t
-
-static STAR stars[NUMBER_OF_STARS];
-
-void init_star(STAR *star, const uint16_t i)
-{
-    /* randomly init stars, generate them around the center of the screen */
-    star->xpos =  -10.0 + (20.0 * (rand()/(RAND_MAX+1.0)));
-    star->ypos =  -10.0 + (20.0 * (rand()/(RAND_MAX+1.0)));
-
-    /* change viewpoint */
-    star->xpos *= 3141;
-    star->ypos *= 3141;
-
-    star->zpos =  i;
-    star->speed = 2 + (int)(2.0 * (rand()/(RAND_MAX+1.0)));
-
-    /* the closer to the viewer the brighter */
-    star->color = i >> 2;
-}
-
-void init_once(/* stars, first run */)
-{
-  uint16_t i;
-  for(i = 0; i < NUMBER_OF_STARS; i++) 
-    init_star(stars +i, i +1);
-}
-
-void move_star(void)
-{
-    int16_t tx, ty;
-    uint16_t i;
-
-    for(i = 0; i < NUMBER_OF_STARS; i++)
-    {
-        stars[i].zpos -= stars[i].speed;
-
-        if(stars[i].zpos <= 0) init_star(stars +i, i +1);
-
-        /* compute 3D position */
-        tx = (stars[i].xpos / stars[i].zpos) + (CANVAS_W >>1);
-        ty = (stars[i].ypos / stars[i].zpos) + (CANVAS_H >>1);
-
-        /* check if a star leaves the screen */
-        if(tx < 0 || tx > CANVAS_W -1
-        || ty < 0 || ty > CANVAS_H -1)
-        {
-            init_star(stars +i, i +1);
-            continue;
-        }
-
-        ctx.canvas[tx + ty * CANVAS_W] = ARGB(0xff, stars[i].color, stars[i].color, stars[i].color);
-    }
-}
-#endif

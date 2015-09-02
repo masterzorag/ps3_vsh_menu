@@ -46,6 +46,19 @@ static uint32_t mix_color(uint32_t bg, uint32_t fg)
     return (fg <<24) | ((rb | g) >>8);
 }
 
+/***********************************************************************
+* dump background
+***********************************************************************/
+static void dump_bg(void)
+{
+    uint16_t i, k;
+    uint64_t *bg = (uint64_t*)ctx.bg;
+
+    for(i = 0; i < CANVAS_H; i++)
+        for(k = 0; k < CANVAS_W /2; k++)
+            bg[k + i * CANVAS_W /2] = *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i)));
+}
+
 
 #ifdef HAVE_SYS_FONT
 
@@ -388,21 +401,7 @@ void print_text(int32_t x, int32_t y, const char *str)
         }
     }
 }
-#endif
-
-/***********************************************************************
-* dump background
-***********************************************************************/
-static void dump_bg(void)
-{
-    uint16_t i, k;
-    uint64_t *bg = (uint64_t*)ctx.bg;
-
-    for(i = 0; i < CANVAS_H; i++)
-        for(k = 0; k < CANVAS_W /2; k++)
-            bg[k + i * CANVAS_W /2] = *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i)));
-}
-
+#endif // HAVE_SYS_FONT
 
 /***********************************************************************
 *
@@ -410,12 +409,6 @@ static void dump_bg(void)
 void init_graphic()
 {
     memset(&ctx, 0, sizeof(DrawCtx));
-
-    #ifdef HAVE_PNG_FONT
-    // load font png
-    Buffer font = load_png(PNG_FONT_PATH);
-    ctx.font    = font.addr;
-    #endif
 
     // set drawing context
     ctx.canvas   = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // canvas buffer
@@ -426,6 +419,10 @@ void init_graphic()
     #ifdef HAVE_SYS_FONT
     ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
     font_init();
+    #elif HAVE_PNG_FONT
+    // load font png
+    Buffer font = load_png(PNG_FONT_PATH);
+    ctx.font    = font.addr;
     #endif
 
     // get current display values

@@ -487,7 +487,7 @@ static void vsh_menu_thread(uint64_t arg)
 
                       #ifdef HAVE_SYS_FONT
                       // set font(char w/h = 20 pxl, line-weight = 1 pxl, distance between chars = 1 pxl)
-                      set_font(20, 20, 1, FONT_D);
+                      set_font(16, 16, 1, FONT_D);
                       #endif
 
 

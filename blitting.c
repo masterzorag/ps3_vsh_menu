@@ -26,6 +26,27 @@ void pause_RSX_rendering()
     rsx_fifo_pause(1);       // pause rsx fifo (no new frames...)
 }
 
+
+/***********************************************************************
+* alpha blending (ARGB)
+*
+* uint32_t bg = background color
+* uint32_t fg = foreground color
+***********************************************************************/
+static uint32_t mix_color(uint32_t bg, uint32_t fg)
+{
+    uint32_t a = fg >>24;
+
+    if(a == 0) return bg;
+
+    uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
+    uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
+    fg = a + ((bg >>24) * (255 - a) / 255);
+
+    return (fg <<24) | ((rb | g) >>8);
+}
+
+
 #ifdef HAVE_SYS_FONT
 
 static Bitmap *bitmap = NULL;                       // font glyph cache
@@ -426,40 +447,6 @@ void init_graphic()
 
 
 /***********************************************************************
-* load a png file
-* 
-* int32_t idx      = index of png, max 4 (0 - 3)
-* const char *path = path to png file
-***********************************************************************/
-int32_t load_png_bitmap(int32_t idx, const char *path)
-{
-    if(idx > PNG_MAX) return -1;
-    ctx.png[idx] = load_png(path);
-    return 0;
-}
-
-
-/***********************************************************************
-* alpha blending (ARGB)
-*
-* uint32_t bg = background color
-* uint32_t fg = foreground color
-***********************************************************************/
-static uint32_t mix_color(uint32_t bg, uint32_t fg)
-{
-    uint32_t a = fg >>24;
-
-    if(a == 0) return bg;
-
-    uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
-    uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
-    fg = a + ((bg >>24) * (255 - a) / 255);
-
-    return (fg <<24) | ((rb | g) >>8);
-}
-
-
-/***********************************************************************
 * flip finished frame into paused ps3-framebuffer
 ***********************************************************************/
 void flip_frame()
@@ -589,7 +576,7 @@ void print_text(int32_t x, int32_t y, const char *str)
     }
 }
 
-#else
+#elif HAVE_XBM_FONT
 
 /***********************************************************************
 * print text, with data from xbm_font.h
@@ -656,6 +643,20 @@ void print_text(int32_t x, int32_t y, const char *str)
     }
 }
 #endif
+
+
+/***********************************************************************
+* load a png file
+* 
+* int32_t idx      = index of png, max 4 (0 - 3)
+* const char *path = path to png file
+***********************************************************************/
+int32_t load_png_bitmap(int32_t idx, const char *path)
+{
+    if(idx > PNG_MAX) return -1;
+    ctx.png[idx] = load_png(path);
+    return 0;
+}
 
 
 /***********************************************************************

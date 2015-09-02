@@ -23,7 +23,7 @@
 #define FONT_PNG_H    514                   // height of font png file in pixel
 #define FONT_W        18                    // font width in pixel
 #define FONT_H        22                    // font height in pixel
-#else
+#elif HAVE_XBM_FONT
 #define FONT_W        16                    // use hardcoded xbm_font
 #define FONT_H        16
 #define SHADOW_PX     2                     // lower-right text shadow in pixel
@@ -114,7 +114,7 @@ typedef struct _DrawCtx{
 
 void pause_RSX_rendering(void);
 
-ifdef HAVE_SYS_FONT
+#ifdef HAVE_SYS_FONT
 void font_finalize(void);
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
 #endif

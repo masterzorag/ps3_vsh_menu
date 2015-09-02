@@ -40,32 +40,32 @@ int32_t LINE_HEIGHT = 0;
 ***********************************************************************/
 static int32_t get_font_object(void)
 {
-	int32_t i;
-	uint32_t pm_start = 0x10000UL;
-	uint64_t pat[2]   = {0x3800001090810080ULL, 0x90A100849161008CULL};
-	
-  while(pm_start < 0x700000UL)
-  {
-    if((*(uint64_t*)pm_start == pat[0]) && (*(uint64_t*)(pm_start+8) == pat[1]))
+    int32_t i;
+    uint32_t pm_start = 0x10000UL;
+    uint64_t pat[2]   = {0x3800001090810080ULL, 0x90A100849161008CULL};
+
+    while(pm_start < 0x700000UL)
     {
-			// get font object
-		  font_obj = (uint32_t)((int32_t)((*(uint32_t*)(pm_start + 0x4C) & 0x0000FFFF) <<16) +
-		  	                    (int16_t)( *(uint32_t*)(pm_start + 0x54) & 0x0000FFFF));
-		  
-		  // get font library pointer
-		  font_lib_ptr = *(uint32_t*)font_obj;
-		  
-		  // get addresses of loaded sys fonts 
-		  for(i = 0; i < 16; i++)
-		    vsh_fonts[i] = (font_obj + 0x14 + (i * 0x100));
-			
-		  return 0;
-		}
-	  
-    pm_start+=4;
-  }
-  
-  return -1;
+        if((*(uint64_t*)pm_start == pat[0]) && (*(uint64_t*)(pm_start+8) == pat[1]))
+        {
+            // get font object
+            font_obj = (uint32_t)((int32_t)((*(uint32_t*)(pm_start + 0x4C) & 0x0000FFFF) <<16) +
+                                  (int16_t)( *(uint32_t*)(pm_start + 0x54) & 0x0000FFFF));
+
+            // get font library pointer
+            font_lib_ptr = *(uint32_t*)font_obj;
+
+            // get addresses of loaded sys fonts 
+            for(i = 0; i < 16; i++)
+              vsh_fonts[i] = (font_obj + 0x14 + (i * 0x100));
+
+            return 0;
+        }
+
+        pm_start += 4;
+    }
+
+    return -1;
 }
 
 /***********************************************************************
@@ -73,18 +73,41 @@ static int32_t get_font_object(void)
 ***********************************************************************/
 static void font_init(void)
 {
-	CellFontRendererConfig rd_cfg;
-	
-	get_font_object();
-	
-	CellFont *opened_font = (void*)(vsh_fonts[5]);  // opened vsh sys font
-	
-	FontOpenFontInstance(opened_font, &ctx.font);
-	
-	memset(&rd_cfg, 0, sizeof(CellFontRendererConfig));
-	FontCreateRenderer(font_lib_ptr, &rd_cfg, &ctx.renderer);
-	
-	FontBindRenderer(&ctx.font, &ctx.renderer);
+    int32_t user_id = 0, val = 0;
+    CellFontRendererConfig rd_cfg;
+    CellFont *opened_font = NULL;
+
+    get_font_object();
+
+    // get id of current logged in user for the xRegistry query we do next
+    user_id = xsetting_CC56EB2D()->GetCurrentUserNumber();
+
+    // get current font style for the current logged in user
+    xsetting_CC56EB2D()->DoUnk16_GetRegistryValue(user_id, 0x5C, &val);
+
+    // get sysfont
+    switch(val)
+    {
+        case 0:   // original
+          opened_font = (void*)(vsh_fonts[5]);
+          break;
+        case 1:   // rounded
+          opened_font = (void*)(vsh_fonts[8]);
+          break;
+        case 3:   // pop
+          opened_font = (void*)(vsh_fonts[10]);
+          break;
+        default:  // better than nothing
+          opened_font = (void*)(vsh_fonts[0]);
+          break;
+    }
+
+    FontOpenFontInstance(opened_font, &ctx.font);
+
+    memset(&rd_cfg, 0, sizeof(CellFontRendererConfig));
+    FontCreateRenderer(font_lib_ptr, &rd_cfg, &ctx.renderer);
+
+    FontBindRenderer(&ctx.font, &ctx.renderer);
 }
 
 /***********************************************************************
@@ -105,46 +128,46 @@ void font_finalize(void)
 ***********************************************************************/
 static void render_glyph(int32_t idx, uint32_t code)
 {
-	CellFontRenderSurface  surface;
-	CellFontGlyphMetrics   metrics;
-	CellFontImageTransInfo transinfo;
-	int32_t i, k, x, y, w, h;
-	int32_t ibw;
-	
-	
-	// setup render settings
-  FontSetupRenderScalePixel(&ctx.font, bitmap->font_w, bitmap->font_h);
-  FontSetupRenderEffectWeight(&ctx.font, bitmap->weight);
-	
-	x = ((int32_t)bitmap->font_w) * 2;
-  y = ((int32_t)bitmap->font_h) * 2;
-  w = x * 2;
-  h = y * 2;
-  
-  // set surface
-  FontRenderSurfaceInit(&surface, NULL, w, 1, w, h);
-  
-  // set render surface scissor, (full area/no scissoring)
-  FontRenderSurfaceSetScissor(&surface, 0, 0, w, h);
-	
-	bitmap->glyph[idx].code = code;
-	
-  FontRenderCharGlyphImage(&ctx.font, bitmap->glyph[idx].code, &surface,
+    CellFontRenderSurface  surface;
+    CellFontGlyphMetrics   metrics;
+    CellFontImageTransInfo transinfo;
+    int32_t i, k, x, y, w, h;
+    int32_t ibw;
+
+
+    // setup render settings
+    FontSetupRenderScalePixel(&ctx.font, bitmap->font_w, bitmap->font_h);
+    FontSetupRenderEffectWeight(&ctx.font, bitmap->weight);
+
+    x = ((int32_t)bitmap->font_w) * 2;
+    y = ((int32_t)bitmap->font_h) * 2;
+    w = x * 2;
+    h = y * 2;
+
+    // set surface
+    FontRenderSurfaceInit(&surface, NULL, w, 1, w, h);
+
+    // set render surface scissor, (full area/no scissoring)
+    FontRenderSurfaceSetScissor(&surface, 0, 0, w, h);
+
+    bitmap->glyph[idx].code = code;
+
+    FontRenderCharGlyphImage(&ctx.font, bitmap->glyph[idx].code, &surface,
                            (float_t)x, (float_t)y, &metrics, &transinfo);
-	
-	bitmap->count++;
-  
-  ibw = transinfo.imageWidthByte;
-  bitmap->glyph[idx].w = transinfo.imageWidth;      // width of char image
-  bitmap->glyph[idx].h = transinfo.imageHeight;     // height of char image
-	
-	// copy glyph bitmap into cache
-	for(k = 0; k < bitmap->glyph[idx].h; k++)
-    for(i = 0; i < bitmap->glyph[idx].w; i++)
-      bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] =
-      transinfo.Image[k * ibw + i];
-	
-	bitmap->glyph[idx].metrics = metrics;
+
+    bitmap->count++;
+
+    ibw = transinfo.imageWidthByte;
+    bitmap->glyph[idx].w = transinfo.imageWidth;      // width of char image
+    bitmap->glyph[idx].h = transinfo.imageHeight;     // height of char image
+
+    // copy glyph bitmap into cache
+    for(k = 0; k < bitmap->glyph[idx].h; k++)
+      for(i = 0; i < bitmap->glyph[idx].w; i++)
+        bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] =
+        transinfo.Image[k * ibw + i];
+
+    bitmap->glyph[idx].metrics = metrics;
 }
 
 /***********************************************************************
@@ -152,30 +175,28 @@ static void render_glyph(int32_t idx, uint32_t code)
 ***********************************************************************/
 static Glyph *get_glyph(uint32_t code)
 {
-	int32_t i, new;
-	Glyph *glyph;
-	
-	
-	// search glyph into cache
-	for(i = 0; i < bitmap->count; i++)
-	{
-		glyph = &bitmap->glyph[i];
-		
-		if(glyph->code == code)
-			return glyph;
-	}
-	
-	// if glyph not into cache
-	new = bitmap->count + 1;
-	
-	if(new >= bitmap->max)       // if cache full
-	  bitmap->count = new = 0;   // reset
-	
-	// render glyph
-	render_glyph(new, code);
-	glyph = &bitmap->glyph[new];
-	
-	return glyph;
+    int32_t i, new;
+    Glyph *glyph;
+
+    // search glyph into cache
+    for(i = 0; i < bitmap->count; i++)
+    {
+        glyph = &bitmap->glyph[i];
+
+        if(glyph->code == code) return glyph;
+    }
+
+    // if glyph not into cache
+    new = bitmap->count + 1;
+
+    if(new >= bitmap->max)       // if cache full
+      bitmap->count = new = 0;   // reset
+
+    // render glyph
+    render_glyph(new, code);
+    glyph = &bitmap->glyph[new];
+
+    return glyph;
 }
 
 /***********************************************************************
@@ -188,25 +209,25 @@ static Glyph *get_glyph(uint32_t code)
 ***********************************************************************/
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance)
 {
-	int32_t i;
-	bitmap = mem_alloc(sizeof(Bitmap));
-	memset(bitmap, 0, sizeof(Bitmap));
-	
-	// set font
-	FontSetScalePixel(&ctx.font, font_w, font_h);
-	FontSetEffectWeight(&ctx.font, weight);
-	FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
-	
-	LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
-	
-	bitmap->max    = FONT_CACHE_MAX;
-	bitmap->count  = 0;
-	bitmap->font_w = font_w;
-	bitmap->font_h = font_h;
-	bitmap->weight = weight;
-  
-	for(i = 0; i < FONT_CACHE_MAX; i++)
-	  bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
+    int32_t i;
+    bitmap = mem_alloc(sizeof(Bitmap));
+    memset(bitmap, 0, sizeof(Bitmap));
+
+    // set font
+    FontSetScalePixel(&ctx.font, font_w, font_h);
+    FontSetEffectWeight(&ctx.font, weight);
+    FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
+
+    LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
+
+    bitmap->max    = FONT_CACHE_MAX;
+    bitmap->count  = 0;
+    bitmap->font_w = font_w;
+    bitmap->font_h = font_h;
+    bitmap->weight = weight;
+
+    for(i = 0; i < FONT_CACHE_MAX; i++)
+      bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
 }
 
 /***********************************************************************
@@ -217,76 +238,60 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance)
 ***********************************************************************/
 static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 {
-	int32_t len = 0;
-	uint32_t c1 = 0, c2 = 0, c3 = 0, c4 = 0;
-	
-	
-	c1 = (uint32_t)*utf8;
-	utf8++;
-	
-	if(c1 <= 0x7F)                        // 1 byte sequence, ascii
-  {
-		len = 1;
-		*ucs4 = c1;
-	}
-	else if((c1 & 0xE0) == 0xC0)          // 2 byte sequence
-  {
-    len = 2;
-    c2 = (uint32_t)*utf8;
-    
-    if((c2 & 0xC0) == 0x80)
-		  *ucs4 = ((c1  & 0x1F) << 6) | (c2 & 0x3F);
-	  else
-			len = *ucs4 = 0;
-  }
-	else if((c1 & 0xF0) == 0xE0)          // 3 bytes sequence
-  {
-    len = 3;
-    c2 = (uint32_t)*utf8;
-    utf8++;
-    
-    if((c2 & 0xC0) == 0x80)
-	  {
-			c3 = (uint32_t)*utf8;
-		  
-		  if((c3 & 0xC0) == 0x80)
-		    *ucs4 = ((c1  & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
-		  else
-		    len = *ucs4 = 0;
-		}
+    int32_t len = 0;
+    uint32_t c1 = 0, c2 = 0, c3 = 0, c4 = 0;
+
+    c1 = (uint32_t)*utf8; utf8++;
+    if(c1 <= 0x7F)                        // 1 byte sequence, ascii
+    {
+        len = 1; *ucs4 = c1;
+    }
+    else if((c1 & 0xE0) == 0xC0)          // 2 byte sequence
+    {
+        len = 2; c2 = (uint32_t)*utf8;
+        if((c2 & 0xC0) == 0x80)
+            *ucs4 = ((c1  & 0x1F) << 6) | (c2 & 0x3F);
+        else
+            len = *ucs4 = 0;
+    }
+    else if((c1 & 0xF0) == 0xE0)          // 3 bytes sequence
+    {
+        len = 3; c2 = (uint32_t)*utf8; utf8++;
+        if((c2 & 0xC0) == 0x80)
+        {
+            c3 = (uint32_t)*utf8;
+            if((c3 & 0xC0) == 0x80)
+              *ucs4 = ((c1  & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F);
+            else
+              len = *ucs4 = 0;
+        }
+        else
+            len = *ucs4 = 0;
+    }
+    else if((c1 & 0xF8) == 0xF0)          // 4 bytes sequence
+    {
+        len = 4; c2 = (uint32_t)*utf8; utf8++;
+        if((c2 & 0xC0) == 0x80)
+        {
+            c3 = (uint32_t)*utf8; utf8++;
+            if((c3 & 0xC0) == 0x80)
+            {
+                c4 = (uint32_t)*utf8;
+                if((c4 & 0xC0) == 0x80)
+                    *ucs4 = ((c1  & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) <<  6) | (c4 & 0x3F);
+                else
+                    len = *ucs4 = 0;
+            }
+            else
+                len = *ucs4 = 0;
+          }
+          else
+              len = *ucs4 = 0;
+    }
     else
-			len = *ucs4 = 0;
-  }
-  else if((c1 & 0xF8) == 0xF0)          // 4 bytes sequence
-  {
-    len = 4;
-    c2 = (uint32_t)*utf8;
-    utf8++;
-    
-    if((c2 & 0xC0) == 0x80)
-	  {
-			c3 = (uint32_t)*utf8;
-			utf8++;
-			
-			if((c3 & 0xC0) == 0x80)
-			{
-				c4 = (uint32_t)*utf8;
-				
-				if((c4 & 0xC0) == 0x80)
-			    *ucs4 = ((c1  & 0x07) << 18) | ((c2 & 0x3F) << 12) | ((c3 & 0x3F) <<  6) | (c4 & 0x3F);
-				else
-				  len = *ucs4 = 0;
-			}
-			else
-			  len = *ucs4 = 0;
-		}
-		else
-		  len = *ucs4 = 0;
-  }
-	else
-		len = *ucs4 = 0;
-  
-	return len;
+        len = *ucs4 = 0;
+
+    return len;
 }
 
 /***********************************************************************
@@ -300,69 +305,67 @@ void print_text(int32_t x, int32_t y, const char *str)
 {
   int32_t i, k, len = 0;
   uint32_t code = 0;                                              // char unicode
-	int32_t t_x = x, t_y = y;                                       // temp x/y
-	int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
-	Glyph *glyph;                                                   // char glyph
-	uint8_t *utf8 = (uint8_t*)str;
-	
-	
-	memset(&glyph, 0, sizeof(Glyph));
-	
-	// center text(only 1 line)
-	if(x == -1)
-	{
-	  while(1)                                  // get render length
-	  {
-		  utf8 += utf8_to_ucs4(utf8, &code);
-		
-		  if(code == 0)
-		    break;
-		
-		  glyph = get_glyph(code);
-		  len += glyph->metrics.Horizontal.advance + bitmap->distance;
-	  }
-    
-	  o_x = t_x = (CANVAS_W - len - bitmap->distance) / 2;
-	  utf8 = (uint8_t*)str;
+    int32_t t_x = x, t_y = y;                                       // temp x/y
+    int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
+    Glyph *glyph;                                                   // char glyph
+    uint8_t *utf8 = (uint8_t*)str;
+
+    memset(&glyph, 0, sizeof(Glyph));
+
+    // center text(only 1 line)
+    if(x == -1)
+    {
+        while(1)                                  // get render length
+        {
+            utf8 += utf8_to_ucs4(utf8, &code);
+
+            if(code == 0) break;
+
+            glyph = get_glyph(code);
+            len += glyph->metrics.Horizontal.advance + bitmap->distance;
+        }
+
+        o_x = t_x = (CANVAS_W - len - bitmap->distance) / 2;
+        utf8 = (uint8_t*)str;
   }
-	
-	// render text
-	while(1)
-	{
-		utf8 += utf8_to_ucs4(utf8, &code);
-		
-		if(code == 0)
-		{
-		  break;
-		}
-		else if(code == '\n')
-		{
-			o_x = x;
-			o_y += bitmap->horizontal_layout.lineHeight;
-			continue;
-		}
-		else
-		{
-			// get glyph to draw
-			glyph = get_glyph(code);
-			
-			// get bitmap origin(x, y)
-			t_x = o_x + glyph->metrics.Horizontal.bearingX;
-			t_y = o_y - glyph->metrics.Horizontal.bearingY;
-			
-			// draw bitmap
-			for(i = 0; i < glyph->h; i++)
-			  for(k = 0; k < glyph->w; k++)
-			    if((glyph->image[i * glyph->w + k]) && (t_x + k < CANVAS_W) && (t_y + i < CANVAS_H))        
-						ctx.canvas[(t_y + i) * CANVAS_W + t_x + k] =
-						mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
-						         ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
-						         (ctx.fg_color & 0x00FFFFFF));
-			
-			// get origin-x for next char
-			o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
-		}
-	}
+
+    // render text
+    while(1)
+    {
+        utf8 += utf8_to_ucs4(utf8, &code);
+
+        if(code == 0)
+        {
+          break;
+        }
+        else if(code == '\n')
+        {
+            o_x = x;
+            o_y += bitmap->horizontal_layout.lineHeight;
+            continue;
+        }
+        else
+        {
+            // get glyph to draw
+            glyph = get_glyph(code);
+
+            // get bitmap origin(x, y)
+            t_x = o_x + glyph->metrics.Horizontal.bearingX;
+            t_y = o_y - glyph->metrics.Horizontal.bearingY;
+
+            // draw bitmap
+            for(i = 0; i < glyph->h; i++)
+              for(k = 0; k < glyph->w; k++)
+                if((glyph->image[i * glyph->w + k]) && (t_x + k < CANVAS_W) && (t_y + i < CANVAS_H))        
+                        ctx.canvas[(t_y + i) * CANVAS_W + t_x + k] =
+                        mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
+                                 ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
+                                 (ctx.fg_color & 0x00FFFFFF));
+
+            // get origin-x for next char
+            o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
+        }
+    }
 }
 #endif
 
@@ -400,10 +403,10 @@ void init_graphic()
     ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     #ifdef HAVE_SYS_FONT
-	ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
-	font_init();
+    ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
+    font_init();
     #endif
-    
+
     // get current display values
     offset = *(uint32_t*)0x60201104;    // start offset of current framebuffer
     getDisplayPitch(&pitch, &unk1);     // framebuffer pitch size

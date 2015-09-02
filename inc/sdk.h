@@ -967,7 +967,7 @@ extern int sdk_88BE4799(const CellFont *font,               // cellFontRenderCha
                         CellFontRenderSurface *surface,
                         float x,
                         float y,
-                        CellFontGlyphMetrics* *metrics,
+                        CellFontGlyphMetrics *metrics,
                         CellFontImageTransInfo *transInfo);
 #define FontRenderCharGlyphImage sdk_88BE4799
 

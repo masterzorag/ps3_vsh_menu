@@ -6,6 +6,9 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "inc/vsh_exports.h"
+
+
 // font constants
 #ifdef HAVE_SYS_FONT
 #define FONT_W         18.f            // font width

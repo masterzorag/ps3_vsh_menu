@@ -137,6 +137,8 @@ static void draw_frame(CellPadData *data)
     set_background_color(bg_color_menu[view]);
 
     draw_background();
+//	draw_png(0, 0, 0, 0, 0, 720, 400);
+
 
     #ifdef HAVE_STARFIELD
     draw_stars();       // to keep them under text lines

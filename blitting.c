@@ -1,5 +1,4 @@
 #include "blitting.h"
-#include "inc/vsh_exports.h"
 #include "png_dec.h"
 #include "misc.h"
 #include "mem.h"
@@ -8,8 +7,7 @@
 
 
 // graphic buffers and drawing context
-static Buffer buf[2];
-static DrawCtx ctx;
+static DrawCtx ctx;                                 // drawing context
 
 // display values
 static uint32_t unk1 = 0, offset = 0, pitch = 0;
@@ -389,10 +387,6 @@ void init_graphic()
 {
     memset(&ctx, 0, sizeof(DrawCtx));
 
-    // alloc VSH Menu graphic buffers, generic based on canvas constants
-    buf[0].addr = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // canvas buffer
-    buf[1].addr = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // background buffer
-
     #ifdef HAVE_PNG_FONT
     // load font png
     Buffer font = load_png(PNG_FONT_PATH);
@@ -400,8 +394,8 @@ void init_graphic()
     #endif
 
     // set drawing context
-    ctx.canvas   = buf[0].addr;
-    ctx.bg       = buf[1].addr;
+    ctx.canvas   = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // canvas buffer
+    ctx.bg       = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // background buffer
     ctx.bg_color = 0xFF000000;          // black, opaque
     ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 

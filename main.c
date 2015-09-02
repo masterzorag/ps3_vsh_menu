@@ -242,6 +242,11 @@ static void stop_VSH_Menu(void)
     // menu off
     menu_running = 0;
 
+    #ifdef HAVE_SYS_FONT
+	// unbind renderer and kill font-instance
+    font_finalize();
+	#endif
+    
     // free heap memory
     destroy_heap();
 

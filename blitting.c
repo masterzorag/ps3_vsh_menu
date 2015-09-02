@@ -328,24 +328,16 @@ void print_text(int32_t x, int32_t y, const char *str)
 * int32_t w        =  width of png part to blit
 * int32_t h        =  height of png part to blit
 ***********************************************************************/
-void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h)
+void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, int32_t w, int32_t h)
 {
-    int32_t i = 0;
-    int32_t tmp_x = 0, tmp_y = 0;
+    int32_t i, k;
 
-    for(i = 0; i < w * h; i++)
-    {
-        ctx.canvas[(can_x + can_y * CANVAS_W) + (tmp_x + tmp_y * CANVAS_W)] =
-            mix_color(ctx.canvas[(can_x + can_y * CANVAS_W) + (tmp_x + tmp_y * CANVAS_W)],
-            ctx.png[idx].addr[(png_x + png_y * ctx.png[idx].w) + (tmp_x + tmp_y * ctx.png[idx].w)]);
-
-        tmp_x++;
-        if(tmp_x == w)
-        {
-            tmp_x = 0;
-            tmp_y++;
-        }
-    }
+    for(i = 0; i < h; i++)
+      for(k = 0; k < w; k++)
+        if((c_x + k < CANVAS_W) && (c_y + i < CANVAS_H))
+          ctx.canvas[(c_y + i) * CANVAS_W + c_x + k] =
+            mix_color(ctx.canvas[(c_y + i) * CANVAS_W + c_x + k],
+            ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
 }
 
 
@@ -457,7 +449,8 @@ void draw_stars()
 **********************************************************************
 void draw_pixel(int32_t x, int32_t y)
 {
-    ctx.canvas[x + y * CANVAS_W] = ctx.fg_color;
+    if((x < CANVAS_W) && (y < CANVAS_H))
+        ctx.canvas[x + y * CANVAS_W] = ctx.fg_color;
 }*/
 
 /***********************************************************************
@@ -496,11 +489,12 @@ void draw_line(int32_t x, int32_t y, int32_t x2, int32_t y2)
 
     for(i = 0; i <= l; i++)
     {
-        ctx.canvas[x + y * CANVAS_W] = ctx.fg_color;
-    num+=s;
+        //ctx.canvas[x + y * CANVAS_W] = ctx.fg_color;
+        draw_pixel(x, y);
+        num+=s;
 
-    if(!(num < l))
-    {
+        if(!(num < l))
+        {
             num-=l;
             x+=dx1;
             y+=dy1;

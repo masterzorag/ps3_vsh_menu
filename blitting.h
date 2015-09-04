@@ -81,7 +81,7 @@ void flip_frame(void);
 void set_background_color(uint32_t color);
 void set_foreground_color(uint32_t color);
 void draw_background(void);
-void draw_png(int32_t idx, int32_t can_x, int32_t can_y, int32_t png_x, int32_t png_y, int32_t w, int32_t h);
+void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, int32_t w, int32_t h);
 
 // text
 #define LEFT      0   // useless

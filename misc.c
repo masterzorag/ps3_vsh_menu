@@ -187,5 +187,6 @@ void read_meminfo(char *data)
     } meminfo;
     system_call_1(352, (uint64_t) &meminfo);
 
-    sprintf(data, "memory:%ikb, avail:%ikb", meminfo.total /1024, meminfo.avail /1024);
+    sprintf(data, "memfree:%i/%ikb", meminfo.avail /1024, meminfo.total /1024);
 }
+

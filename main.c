@@ -84,12 +84,39 @@ static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 // max menu entries per view
 static int8_t max_menu[] = {9, 7, 5};
 
+/*
 static uint32_t bg_color_menu[] =
 {
     0x7F0000FF,     // blue, semitransparent
     0x70000000,     // black, semitransparent
     0x7F00FF00      // green, semitransparent
 };
+*/
+
+// Every view have its dedicated Bg/Fg color
+static uint32_t menu_colors[2][3] = {
+{   // Bg_colors[0][0-2]
+    0x7F0000FF,     // blue, semitransparent
+    0x70000000,     // black, semitransparent
+    0x7F00FF00      // green, semitransparent
+},
+{   // Fg_colors[1][0-2]
+    0xFF0000FF,     // blue, opac
+    0xFF000000,     // black, opac
+    0xFFFFFFFF      // white, opac
+}   /*
+,   we can also add:
+{   - Fg2 to use better gradient color, foreach view
+    0xAARRGGBB,
+    0xAARRGGBB,
+    0xAARRGGBB,
+},
+{   
+    0xFF303030,     // shadows can be the same across view
+    0x00000000,
+    0x00000000
+}   */
+};  // better align to 128bits
 
 // menu entry strings
 const char *entry_str[3][9] = {
@@ -128,13 +155,14 @@ const char *entry_str[3][9] = {
 static void draw_frame(CellPadData *data)
 {
     int8_t i;
+    char tmp_ln[8 * (4 + 1)];
     uint16_t tx, ty;
 
     // all 32bit colors are ARGB, the framebuffer format
-    set_foreground_color(0xFFFFFFFF);     // white, opac
+    set_foreground_color(menu_colors[1][view]);
 
     // set the right background color for current view
-    set_background_color(bg_color_menu[view]);
+    set_background_color(menu_colors[0][view]);
 
     draw_background();
 //	draw_png(0, 0, 0, 0, 0, 720, 400);
@@ -150,78 +178,88 @@ static void draw_frame(CellPadData *data)
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
     {
-        i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(0xFFFFFFFF);
+        i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(menu_colors[1][view]);
 
-        print_text(BORD_D, 8 + ((FONT_H + FONT_D) * (i + 1)), entry_str[view][i]);
+        ty = 8 + ((FONT_H + FONT_D) * (i + 1));
+        print_text(BORD_D, ty, entry_str[view][i]);
     }
 
     // (re)set back after draw last line
-    set_foreground_color(0xFFFFFFFF);
+    set_foreground_color(menu_colors[1][view]);
 
     // ...
 
-    // second menu, red one:
+    // second menu, dump pad data:
     if(view == 1)
-    {
+    {   // used in text position
+        uint16_t ty = 180;
+        uint8_t x;
+
+        sprintf(tmp_ln, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
+        tx = get_aligned_x(tmp_ln, CENTER);
+        print_text(tx, ty, tmp_ln);
+
         /* hexdump pad data: store in text 8 buttons in a row
            in "%.4x" format plus 1 for ':', last one will be
-           replaced by terminator, no need to add 1 */
-        char tmp_ln[8 * (4 + 1)];
-        
-        // test text alignment
-        sprintf(tmp_ln, "*%p, %d bytes;", data, data->len * sizeof(uint16_t));
-        tx = get_aligned_x(tmp_ln, CENTER);
-        print_text(tx, 180, tmp_ln);
+           replaced by terminator, no need to add 1
+           char tmp_ln[8 * (4 + 1)]; */
 
-        // hexdump first 32 buttons
-        uint16_t x = 0, ty = 200;
+        tx = 0, ty = 200, x = 0;
         for(i = 0; i < 32; i++)
         {
             sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
             x += 5;
             tmp_ln[x] = '\0';
+            if(!tx) tx = get_aligned_x(tmp_ln, CENTER);
 
             if(x %8 == 0)
-            {
-                // overwrite last ':' with terminator
+            {   // overwrite last ':' with terminator
                 tmp_ln[x -1] = '\0';
-                tx = get_aligned_x(tmp_ln, CENTER);
                 print_text(tx, ty, tmp_ln);
                 x = 0, ty += (FONT_H + FONT_D);            // additional px to next line
             }
         }
 
-        // sys memory stats
-        read_meminfo(tmp_ln);
-        tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
-        print_text(tx, CANVAS_H - (FONT_H + FONT_D) - BORD_D, tmp_ln); // from bottom
-
     }
-    else
-    if(view == 2)   // only on third view
+    else if(view == 2)   // only on third view
     {
-        char tmp_ln[8 + 1];
+        uint32_t *color = NULL;
+        uint8_t x, g;  // ground
+        // bg[0][0-2]   [(col -1) /4][line]
+        // fg[1][0-2]   [(col -1) /4][line]
 
-        // print all bg_color entries, and the current selected entry in green
-        tx = CANVAS_W - (8 * FONT_W) - BORD_D;   // additional px from R margin
-        for(i = 0; i < 3; i++)
+        // print all color entries, and the selected entry in green
+        for(g = 0; g < 2; g++)  // ground, Bg | Fg | ...
         {
-            sprintf(tmp_ln, "%.8x", bg_color_menu[i]);
-            ty = 8 + ((FONT_H + FONT_D) * (i + 1));
-            print_text(tx, ty, tmp_ln);
-
-            if(i == line && col > 0)  // mark in green selected color component
+            tx = 180 + (10 /* chars of distance */ * FONT_W) * g;
+            for(i = 0; i < 3; i++)  // first 3 lines: (Bg/Fg) 0, 1, 2
             {
-                char tmp_cc[2 + 1];
-                set_foreground_color(0xFF00FF00);
-                strncpy(tmp_cc, &tmp_ln[(col -1) *2], 2); // one of AA:RR:GG:BB
-                print_text(tx + ((col -1) *2 * FONT_W), ty, tmp_cc);
+                ty = 8 + ((FONT_H + FONT_D) * (i + 1));
+                color = &menu_colors[g][i];
+                set_foreground_color(*color);
 
-                // (re)set back after marked text
-                set_foreground_color(0xFFFFFFFF);
+                sprintf(tmp_ln, "%.8x", *color);
+                print_text(tx, ty, tmp_ln);
+
+                if(i == line 
+                && col > 0 
+                && (col -1) /4 /* ARGB */ == g)  // mark in green selected color component
+                {
+                //  char tmp_cc[2 + 1];
+                    set_foreground_color(0xFF00FF00);
+                //  strncpy(tmp_cc, &tmp_ln[((col -1) %4) *2], 2);
+                //  print_text(tx + (((col -1) %4) *2 * FONT_W), ty, tmp_cc);
+
+                    x = ((col -1) %4) *2 /*chars*/ ;
+                    // put a terminator and print one of AA:RR:GG:BB
+                    tmp_ln[x +2 +1] = '\0';
+                    print_text(tx + (x * FONT_W), ty, &tmp_ln[x]);
+
+                    // (re)set back after marked text
+                    set_foreground_color(*color);
+                }
             }
         }
-        
     } //end if(view == 2)
 
     // ...
@@ -232,8 +270,12 @@ static void draw_frame(CellPadData *data)
     move_text();
     #endif
 
-}
+    // sys memory stats
+    read_meminfo(tmp_ln);
+    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
+    print_text(tx, CANVAS_H - (FONT_H + FONT_D) - BORD_D, tmp_ln); // from bottom
 
+} // end draw_frame()
 
 
 /***********************************************************************
@@ -264,18 +306,24 @@ static void do_updown_action(uint16_t curpad)
 {
     bool flag = 0;
     uint8_t *value, step, max;
+    uint32_t *color = NULL;
 
+    // setup common bounds for selected ground color(col, line)
     if(col)
-    { // A, R, G, B: 0x00-0xFF
-      color_comp[0] = GET_A(bg_color_menu[line]), color_comp[1] = GET_R(bg_color_menu[line]);
-      color_comp[2] = GET_G(bg_color_menu[line]), color_comp[3] = GET_B(bg_color_menu[line]);
-      value = (uint8_t*)&color_comp[col -1];
-      step  = -2, max = 0xFF;
+    {   // A, R, G, B: 0x00-0xFF, can loop
+        // bg [0][0-2]   [(col -1)/4][line]
+        // fg [1][0-2]   [(col -1)/4][line]
+        value = &color_comp[(col -1) %4];
+        step  = -2, max = 0xFF;
+        color = &menu_colors[(col -1) /4][line];
+
+        color_comp[0] = GET_A(*color), color_comp[1] = GET_R(*color);
+        color_comp[2] = GET_G(*color), color_comp[3] = GET_B(*color);
     }
     else
-    { // line: 0-max_menu[view]
-      value = (uint8_t*)&line;
-      step  = 1, max = max_menu[view] -1;
+    {   // line: 0-max_menu[view], bounded: no loop
+        value = (uint8_t*)&line;
+        step  = 1, max = max_menu[view] -1;
     }
 
     // update value
@@ -293,9 +341,9 @@ static void do_updown_action(uint16_t curpad)
     }
 
     if(flag)
-    {   // update selected bg_color
-        if(col) bg_color_menu[line] = ARGB(color_comp[0], color_comp[1],
-                                           color_comp[2], color_comp[3]);
+    {   // update selected color //bg_color_menu[line] =
+        if(col) *color = ARGB(color_comp[0], color_comp[1],
+                              color_comp[2], color_comp[3]);
 
         play_rco_sound("system_plugin", "snd_cursor");
     }
@@ -315,8 +363,8 @@ static void do_leftright_action(uint16_t curpad)
           if(col > 0) { col--, flag = 1; }
       }
       else   // & PAD_RIGHT
-      {
-          if(col < 4) { col++, flag = 1; }
+      {   //0-argb-argb, 1+4+4, 
+          if(col < 4 *2) { col++, flag = 1; }
       }
 
       if(flag) play_rco_sound("system_plugin", "snd_cursor");
@@ -348,7 +396,7 @@ static void do_menu_action(void)
           case 3:                  // "4: Enter third menu view"
             view = 2;              // change menu view
             line = col = 0;        // on start entry, for colors
-            color_comp[0] = GET_A(bg_color_menu[line]);
+            color_comp[0] = GET_A(menu_colors[col][line]);
             break;
           case 4:                  // "5: Play trophy sound"
             play_rco_sound("system_plugin", "snd_trophy");
@@ -447,7 +495,7 @@ static void vsh_menu_thread(uint64_t arg)
     uint16_t oldpad = 0, curpad = 0;
     CellPadData pdata;
 
-    // wait for XMB, feedback
+    // wait for XMB feedback
     sys_timer_sleep(13);
 
     //vshtask_notify("sprx running...");
@@ -475,7 +523,7 @@ static void vsh_menu_thread(uint64_t arg)
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 
             if((curpad != oldpad)
-            && (curpad & PAD_L3))        // menu hotkey
+            && (curpad & PAD_L3))        // Hotkey menu
             {
                 switch(menu_running)
                 {

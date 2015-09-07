@@ -137,6 +137,8 @@ static void draw_frame(CellPadData *data)
     set_background_color(bg_color_menu[view]);
 
     draw_background();
+//	draw_png(0, 0, 0, 0, 0, 720, 400);
+
 
     #ifdef HAVE_STARFIELD
     draw_stars();       // to keep them under text lines
@@ -242,6 +244,11 @@ static void stop_VSH_Menu(void)
     // menu off
     menu_running = 0;
 
+    #ifdef HAVE_SYS_FONT
+	// unbind renderer and kill font-instance
+    font_finalize();
+	#endif
+    
     // free heap memory
     destroy_heap();
 
@@ -477,6 +484,15 @@ static void vsh_menu_thread(uint64_t arg)
 
                       // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
                       init_graphic();
+
+                      #ifdef HAVE_SYS_FONT
+                      // set font(char w/h = 20 pxl, line-weight = 1 pxl, distance between chars = 1 pxl)
+                      set_font(16, 16, 1, FONT_D);
+                      #endif
+
+
+                      // load background image
+                      //load_png_bitmap(0, "/path/to.png");
 
                       // stop vsh pad
                       start_stop_vsh_pad(0);

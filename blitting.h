@@ -6,23 +6,34 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "inc/vsh_exports.h"
+
+
 // font constants
-#ifdef HAVE_PNG_FONT
-#define PNG_FONT_PATH "/dev_hdd0/font.png"  // use external font.png
-#define FONT_PNG_W    512                   // width of font png file in pixel
-#define FONT_PNG_H    514                   // height of font png file in pixel
-#define FONT_W        18                    // font width in pixel
-#define FONT_H        22                    // font height in pixel
-#else
-#define FONT_W        16                    // use hardcoded xbm_font
-#define FONT_H        16
-#define SHADOW_PX     2                     // lower-right text shadow in pixel
+#ifdef HAVE_SYS_FONT
+#define FONT_W         16.f            // font width
+#define FONT_H         16.f            // font height
+#define FONT_WEIGHT    1.f             // font weight
+#define FONT_CACHE_MAX 256             // max glyph cache count
+
+#elif HAVE_PNG_FONT
+#define PNG_FONT_PATH "/dev_hdd0/font.png" // use external font.png
+#define FONT_PNG_W     512                 // width of font png file in pixel
+#define FONT_PNG_H     514                 // height of font png file in pixel
+#define FONT_W         18                  // font width in pixel
+#define FONT_H         22                  // font height in pixel
+
+#elif HAVE_XBM_FONT
+#define FONT_W         16                  // use hardcoded xbm_font
+#define FONT_H         16
+#define SHADOW_PX      2                   // lower-right text shadow in pixel
 #endif
 
-#define FONT_D        1                     // distance to next char
-#define BORD_D        4                     // distance from canvas border
+// common
+#define FONT_D         1                   // distance to next char
+#define BORD_D         4                   // distance from canvas border
 // additional png bitmaps
-#define PNG_MAX       4
+#define PNG_MAX        4
 
 // canvas constants
 // the values for canvas width and height can be changed for make a smaller or larger
@@ -57,6 +68,29 @@ typedef struct _Buffer{
     uint16_t  h;           // buffer height
 } Buffer;
 
+#ifdef HAVE_SYS_FONT
+
+extern int32_t LINE_HEIGHT;
+
+// font cache
+typedef struct _Glyph {
+	uint32_t code;                           // char unicode
+	CellFontGlyphMetrics metrics;            // glyph metrics
+	uint16_t w;                              // image width 
+	uint16_t h;                              // image height
+	uint8_t *image;                          // addr -> image data
+} Glyph;
+
+typedef struct _Bitmap {
+	CellFontHorizontalLayout horizontal_layout;   // struct -> horizontal text layout info
+	float font_w, font_h;                         // char w/h
+	float weight, slant;                          // line weight and char slant
+	int32_t distance;                             // distance between chars
+	int32_t count;                                // count of current cached glyphs
+	int32_t max;                                  // max glyph into this cache
+	Glyph glyph[FONT_CACHE_MAX];                  // glyph struct
+} Bitmap;
+#endif
 
 // drawing context
 typedef struct _DrawCtx{
@@ -64,6 +98,12 @@ typedef struct _DrawCtx{
     uint32_t *bg;          // addr of background backup
     uint32_t bg_color;     // background color
     uint32_t fg_color;     // foreground color
+
+    #ifdef HAVE_SYS_FONT
+	uint32_t *font_cache;  // addr of glyph bitmap cache buffer
+	CellFont font;                
+	CellFontRenderer renderer;
+    #endif
 
     #ifdef HAVE_PNG_FONT
     uint32_t *font;        // addr of decoded png font
@@ -74,6 +114,11 @@ typedef struct _DrawCtx{
 
 
 void pause_RSX_rendering(void);
+
+#ifdef HAVE_SYS_FONT
+void font_finalize(void);
+void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
+#endif
 
 void init_graphic(void);
 int32_t load_png_bitmap(int32_t idx, const char *path);

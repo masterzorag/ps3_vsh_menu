@@ -3,17 +3,17 @@
 	generated with genXBMfonts, https://github.com/masterzorag/xbm_tools
 	2015, masterzorag@gmail.com
 */
+#ifndef __XBM_FONT_H__
+#define __XBM_FONT_H__
 
 #define LOWER_ASCII_CODE 32
 #define UPPER_ASCII_CODE 126
-/*
-we have already defined them in blitting.h
 #define FONT_W 16
 #define FONT_H 16
-*/
+
 #define BITS_IN_BYTE 8
 
-char xbmFont[95][(FONT_W * FONT_H) / BITS_IN_BYTE] = {
+static char xbmFont[95][(FONT_W * FONT_H) / BITS_IN_BYTE] = {
 { /* 0: ASCII 032 [ ] bits */
 	0x00
 },
@@ -484,3 +484,5 @@ char xbmFont[95][(FONT_W * FONT_H) / BITS_IN_BYTE] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 }
 };
+
+#endif // __XBM_FONT_H__

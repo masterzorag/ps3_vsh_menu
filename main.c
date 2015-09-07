@@ -84,15 +84,6 @@ static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 // max menu entries per view
 static int8_t max_menu[] = {9, 7, 5};
 
-/*
-static uint32_t bg_color_menu[] =
-{
-    0x7F0000FF,     // blue, semitransparent
-    0x70000000,     // black, semitransparent
-    0x7F00FF00      // green, semitransparent
-};
-*/
-
 // Every view have its dedicated Bg/Fg color
 static uint32_t menu_colors[2][3] = {
 {   // Bg_colors[0][0-2]
@@ -101,8 +92,8 @@ static uint32_t menu_colors[2][3] = {
     0x7F00FF00      // green, semitransparent
 },
 {   // Fg_colors[1][0-2]
-    0xFF0000FF,     // blue, opac
-    0xFF000000,     // black, opac
+    0xFFB0B0B0,     // blue, opac
+    0xFFA0A0A0,     // black, opac
     0xFFFFFFFF      // white, opac
 }   /*
 ,   we can also add:
@@ -210,11 +201,13 @@ static void draw_frame(CellPadData *data)
             sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
             x += 5;
             tmp_ln[x] = '\0';
-            if(!tx) tx = get_aligned_x(tmp_ln, CENTER);
-
+            
             if(x %8 == 0)
             {   // overwrite last ':' with terminator
                 tmp_ln[x -1] = '\0';
+                if(tx == 0)
+                    tx = get_aligned_x(tmp_ln, CENTER);
+
                 print_text(tx, ty, tmp_ln);
                 x = 0, ty += (FONT_H + FONT_D);            // additional px to next line
             }
@@ -245,14 +238,11 @@ static void draw_frame(CellPadData *data)
                 && col > 0 
                 && (col -1) /4 /* ARGB */ == g)  // mark in green selected color component
                 {
-                //  char tmp_cc[2 + 1];
                     set_foreground_color(0xFF00FF00);
-                //  strncpy(tmp_cc, &tmp_ln[((col -1) %4) *2], 2);
-                //  print_text(tx + (((col -1) %4) *2 * FONT_W), ty, tmp_cc);
 
-                    x = ((col -1) %4) *2 /*chars*/ ;
                     // put a terminator and print one of AA:RR:GG:BB
-                    tmp_ln[x +2 +1] = '\0';
+                    x = ((col -1) %4) *2 /*chars*/ ;
+                    tmp_ln[x +2] = '\0';
                     print_text(tx + (x * FONT_W), ty, &tmp_ln[x]);
 
                     // (re)set back after marked text
@@ -287,9 +277,9 @@ static void stop_VSH_Menu(void)
     menu_running = 0;
 
     #ifdef HAVE_SYS_FONT
-	// unbind renderer and kill font-instance
+	  // unbind renderer and kill font-instance
     font_finalize();
-	#endif
+    #endif
     
     // free heap memory
     destroy_heap();

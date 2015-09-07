@@ -611,7 +611,9 @@ void print_text(const int32_t x, const int32_t y, const char *str)
                 if(bit[i] & (1 << j))
                 {
                     // draw a shadow, displaced by + SHADOW_PX
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W] = 0xFF303030;
+                    ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W] = 
+                    mix_color(
+                      ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W], 0xFF303030);
 
                     // paint FG pixel
                     ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
@@ -629,7 +631,7 @@ void print_text(const int32_t x, const int32_t y, const char *str)
                 tx = 0, ty++;        // use to decrease gradient
 
                 // vertical gradient
-                tc -= ty * 580;
+                tc -= ty * 580 /2;
 
                 // horizontal gradient
                 //tc -= ty * 15;

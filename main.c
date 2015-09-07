@@ -75,7 +75,7 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
-static int8_t menu_running = 0; // vsh menu off(0) or on(1)
+static bool   menu_running = 0; // vsh menu off(0) or on(1)
 static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
@@ -97,7 +97,7 @@ const char *entry_str[3][9] = {
     "1: Make a single beep",
     "2: Make a double beep",
     "3: Enter second menu view",
-    "4: Enter third menu view",
+    "4: Setup colors menu view",
     "5: Play trophy sound",
     "6: Make screenshot",
     "7: Make screenshot with Menu",
@@ -105,7 +105,7 @@ const char *entry_str[3][9] = {
     "9: Shutdown PS3"
 },
 {   // red menu
-    "1: Back to main view",
+    "1: test",
     "2: screenshot",
     "3: Alpha",
     "4: Red",
@@ -114,11 +114,11 @@ const char *entry_str[3][9] = {
     "7: test"
 },
 {
-    "1: bg 1",
-    "2: bg 2",
-    "3: bg 3",
-    "4: fg 1",
-    "5: Back to main view"
+    "1: bg fg",
+    "2: bg fg",
+    "3: bg fg",
+    "4: test",
+    "5: test"
 }
 };
 
@@ -416,14 +416,22 @@ static void do_menu_action(void)
           case 3:               // "4: test string..."
             //...
             break;
-          case 4:               // "5: Back to main view"
-            view = line = col = 0;
+          case 4:               // "5: test string..."
+            //...
             break;
         }
         break;
     }
 }
 
+
+/***********************************************************************
+* execute a menu_back action, unconditionally
+***********************************************************************/
+static void do_back_action(void)
+{
+    view = line = col = 0;
+}
 
 
 /***********************************************************************
@@ -535,6 +543,8 @@ static void vsh_menu_thread(uint64_t arg)
                     if(curpad & (PAD_LEFT | PAD_RIGHT)) do_leftright_action(curpad);
 
                     if(curpad & PAD_CROSS) do_menu_action();
+
+                    if(curpad & PAD_CIRCLE) do_back_action();
                 }
 
                 // ...

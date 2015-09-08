@@ -45,6 +45,37 @@ static uint32_t mix_color(const uint32_t bg, uint32_t fg)
     return (fg <<24) | ((rb | g) >>8);
 }
 
+
+/***********************************************************************
+* linear gradient (ARGB)
+*
+* uint32_t fr_argb = foreground start color
+* uint32_t to_argb = foreground end color
+* uint8_t steps    = number of chunk we split fading
+* uint8_t step     = which step we compute
+***********************************************************************/
+static uint32_t linear_gradient(uint32_t fr_argb, uint32_t to_argb, uint8_t steps, uint8_t step)
+{
+    uint8_t fr[4], to[4];
+    float_t st[4];
+
+    fr[0] = GET_A(fr_argb), to[0] = GET_A(to_argb),
+    fr[1] = GET_R(fr_argb), to[1] = GET_R(to_argb),
+    fr[2] = GET_G(fr_argb), to[2] = GET_G(to_argb),
+    fr[3] = GET_B(fr_argb), to[3] = GET_B(to_argb);
+
+    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
+    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
+    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
+    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
+
+    return ARGB((int)fr[0] + (int)(st[0] * step),
+                (int)fr[1] + (int)(st[1] * step),
+                (int)fr[2] + (int)(st[2] * step),
+                (int)fr[3] + (int)(st[3] * step));
+}
+
+
 /***********************************************************************
 * dump background
 ***********************************************************************/

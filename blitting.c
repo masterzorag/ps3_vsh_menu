@@ -620,7 +620,6 @@ void print_text(int32_t x, int32_t y, const char *str)
 void print_text(const int32_t x, const int32_t y, const char *str)
 {
     uint8_t c, i, j, tx = 0, ty = 0;
-    uint32_t tc = ctx.fg_color;
 
     while(*str != '\0')
     {
@@ -629,9 +628,6 @@ void print_text(const int32_t x, const int32_t y, const char *str)
         if(c < LOWER_ASCII_CODE || c > UPPER_ASCII_CODE) c = 180;
 
         char *bit = xbmFont[c - LOWER_ASCII_CODE];
-
-        // reset color (for each glyph) to get vertical gradient
-        tc = ctx.fg_color;
 
         // dump bits map (bytes_per_line 2, size 32 char of 8 bit)
         for(i = 0; i < ((FONT_W * FONT_H) / BITS_IN_BYTE); i++)
@@ -647,7 +643,8 @@ void print_text(const int32_t x, const int32_t y, const char *str)
                       ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W], 0xFF303030);
 
                     // paint FG pixel
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
+                    ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] =
+                        linear_gradient(ctx.fg_color, 0xFF303030, FONT_H, ty);
                 }
                 else
                 {
@@ -659,13 +656,7 @@ void print_text(const int32_t x, const int32_t y, const char *str)
             tx++;
             if(tx == (FONT_W / BITS_IN_BYTE))
             {
-                tx = 0, ty++;        // use to decrease gradient
-
-                // vertical gradient
-                tc -= ty * 580 /2;
-
-                // horizontal gradient
-                //tc -= ty * 15;
+                tx = 0, ty++;        // step to decrease gradient
             }
         }
         ty = 0;

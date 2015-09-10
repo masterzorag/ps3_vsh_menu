@@ -343,23 +343,6 @@ void print_text(int32_t x, int32_t y, const char *str)
 
     memset(&glyph, 0, sizeof(Glyph));
 
-    // center text(only 1 line)
-    if(x == -1)
-    {
-        while(1)                                  // get render length
-        {
-            utf8 += utf8_to_ucs4(utf8, &code);
-
-            if(code == 0) break;
-
-            glyph = get_glyph(code);
-            len += glyph->metrics.Horizontal.advance + bitmap->distance;
-        }
-
-        o_x = t_x = (CANVAS_W - len - bitmap->distance) / 2;
-        utf8 = (uint8_t*)str;
-  }
-
     // render text
     while(1)
     {
@@ -507,7 +490,27 @@ void draw_background()
 ***********************************************************************/
 uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 {
-    return (CANVAS_W - (strlen(str) * FONT_W)) / align;
+    #ifdef HAVE_SYS_FONT
+    uint32_t code = 0, len = 0;             // char unicode
+    uint8_t *utf8 = (uint8_t*)str;
+    Glyph *glyph;                           // char glyph
+    memset(&glyph, 0, sizeof(Glyph));
+
+    // get render length
+    while(1)
+    {
+        utf8 += utf8_to_ucs4(utf8, &code);
+
+        if(code == 0) break;
+
+        glyph = get_glyph(code);
+        len += glyph->metrics.Horizontal.advance + bitmap->distance;
+    }
+
+    return (CANVAS_W - len - bitmap->distance) / alignment;
+    #else
+    return (CANVAS_W - (strlen(str) * FONT_W)) / alignment;
+    #endif
 }
 
 

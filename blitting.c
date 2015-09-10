@@ -33,10 +33,9 @@ void pause_RSX_rendering()
 * uint32_t bg = background color
 * uint32_t fg = foreground color
 ***********************************************************************/
-static uint32_t mix_color(uint32_t bg, uint32_t fg)
+static uint32_t mix_color(const uint32_t bg, uint32_t fg)
 {
     uint32_t a = fg >>24;
-
     if(a == 0) return bg;
 
     uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
@@ -582,8 +581,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-#include "xbm_font.h"
-void print_text(int32_t x, int32_t y, const char *str)
+void print_text(const int32_t x, const int32_t y, const char *str)
 {
     uint8_t c, i, j, tx = 0, ty = 0;
     uint32_t tc = ctx.fg_color;

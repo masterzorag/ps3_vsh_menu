@@ -88,11 +88,11 @@ static int32_t get_font_object(void)
                 (int16_t)( *(uint32_t*)(pm_start +0x54) & 0x0000FFFF));
 
             // get font library pointer
-            font_lib_ptr = (void*)*(uint32_t*)font_obj;   // 
+            font_lib_ptr = *(uint32_t*)font_obj;
 
             // get addresses of loaded sys fonts 
             for(i = 0; i < 16; i++)
-                vsh_fonts[i] = (font_obj + 0x14 + (i * 0x100));
+                vsh_fonts[i] = (font_obj +0x14 + (i * 0x100));
 
             return 0;
         }

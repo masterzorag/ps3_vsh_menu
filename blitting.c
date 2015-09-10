@@ -73,7 +73,7 @@ int32_t LINE_HEIGHT = 0;
 ***********************************************************************/
 static int32_t get_font_object(void)
 {
-    int32_t i;
+    uint8_t i;
     uint32_t pm_start = 0x10000UL;
     uint64_t pat[2]   = {0x3800001090810080ULL, 0x90A100849161008CULL};
 
@@ -88,7 +88,7 @@ static int32_t get_font_object(void)
                 (int16_t)( *(uint32_t*)(pm_start +0x54) & 0x0000FFFF));
 
             // get font library pointer
-            font_lib_ptr = *(uint32_t*)font_obj;
+            font_lib_ptr = (void*)*(uint32_t*)font_obj;   // 
 
             // get addresses of loaded sys fonts 
             for(i = 0; i < 16; i++)
@@ -240,7 +240,7 @@ static Glyph *get_glyph(uint32_t code)
 ***********************************************************************/
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /* unused */)
 {
-    int32_t i;
+    uint8_t i;
     bitmap = mem_alloc(sizeof(Bitmap));
     memset(bitmap, 0, sizeof(Bitmap));
 
@@ -267,9 +267,9 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /
 * uint8_t *utf8   =  utf8 string
 * uint32_t *ucs4  =  variable to hold ucs4 code
 ***********************************************************************/
-static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
+static uint8_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 {
-    int32_t len = 0;
+    uint8_t len = 0;
     uint32_t c1 = 0, c2 = 0, c3 = 0, c4 = 0;
 
     c1 = (uint32_t)*utf8; utf8++;
@@ -334,7 +334,7 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 ***********************************************************************/
 void print_text(int32_t x, int32_t y, const char *str)
 {
-    int32_t i, k, len = 0;
+    uint8_t i, k;
     uint32_t code = 0;                                              // char unicode
     int32_t t_x = x, t_y = y;                                       // temp x/y
     int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y

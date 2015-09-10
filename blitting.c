@@ -80,7 +80,8 @@ static int32_t get_font_object(void)
 
     while(pm_start < 0x700000UL)
     {
-        if((*(uint64_t*)pm_start == pat[0]) && (*(uint64_t*)(pm_start+8) == pat[1]))
+        if((*(uint64_t*) pm_start     == pat[0])
+        && (*(uint64_t*)(pm_start +8) == pat[1]))
         {
             // get font object
             font_obj = (uint32_t)((int32_t)((*(uint32_t*)(pm_start + 0x4C) & 0x0000FFFF) <<16) +
@@ -91,7 +92,7 @@ static int32_t get_font_object(void)
 
             // get addresses of loaded sys fonts 
             for(i = 0; i < 16; i++)
-              vsh_fonts[i] = (font_obj + 0x14 + (i * 0x100));
+                vsh_fonts[i] = (font_obj + 0x14 + (i * 0x100));
 
             return 0;
         }
@@ -173,10 +174,8 @@ static void render_glyph(int32_t idx, uint32_t code)
     FontSetupRenderScalePixel(&ctx.font, bitmap->font_w, bitmap->font_h);
     FontSetupRenderEffectWeight(&ctx.font, bitmap->weight);
 
-    x = ((int32_t)bitmap->font_w) * 2;
-    y = ((int32_t)bitmap->font_h) * 2;
-    w = x * 2;
-    h = y * 2;
+    x = ((int32_t)bitmap->font_w) * 2, w = x *2;
+    y = ((int32_t)bitmap->font_h) * 2, h = y *2;
 
     // set surface
     FontRenderSurfaceInit(&surface, NULL, w, 1, w, h);
@@ -187,7 +186,7 @@ static void render_glyph(int32_t idx, uint32_t code)
     bitmap->glyph[idx].code = code;
 
     FontRenderCharGlyphImage(&ctx.font, bitmap->glyph[idx].code, &surface,
-                           (float_t)x, (float_t)y, &metrics, &transinfo);
+                            (float_t)x, (float_t)y, &metrics, &transinfo);
 
     bitmap->count++;
 
@@ -197,9 +196,8 @@ static void render_glyph(int32_t idx, uint32_t code)
 
     // copy glyph bitmap into cache
     for(k = 0; k < bitmap->glyph[idx].h; k++)
-      for(i = 0; i < bitmap->glyph[idx].w; i++)
-        bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] =
-        transinfo.Image[k * ibw + i];
+        for(i = 0; i < bitmap->glyph[idx].w; i++)
+            bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] = transinfo.Image[k * ibw + i];
 
     bitmap->glyph[idx].metrics = metrics;
 }
@@ -224,7 +222,7 @@ static Glyph *get_glyph(uint32_t code)
     new = bitmap->count + 1;
 
     if(new >= bitmap->max)       // if cache full
-      bitmap->count = new = 0;   // reset
+        bitmap->count = new = 0; // reset
 
     // render glyph
     render_glyph(new, code);
@@ -261,7 +259,7 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance)
     bitmap->weight = weight;
 
     for(i = 0; i < FONT_CACHE_MAX; i++)
-      bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
+        bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
 }
 
 /***********************************************************************
@@ -337,8 +335,8 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 ***********************************************************************/
 void print_text(int32_t x, int32_t y, const char *str)
 {
-  int32_t i, k, len = 0;
-  uint32_t code = 0;                                              // char unicode
+    int32_t i, k, len = 0;
+    uint32_t code = 0;                                              // char unicode
     int32_t t_x = x, t_y = y;                                       // temp x/y
     int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
     Glyph *glyph;                                                   // char glyph
@@ -389,10 +387,12 @@ void print_text(int32_t x, int32_t y, const char *str)
 
             // draw bitmap
             for(i = 0; i < glyph->h; i++)
-              for(k = 0; k < glyph->w; k++)
-                if((glyph->image[i * glyph->w + k]) && (t_x + k < CANVAS_W) && (t_y + i < CANVAS_H))        
+                for(k = 0; k < glyph->w; k++)
+                    if((glyph->image[i * glyph->w + k])
+                    && (t_x + k < CANVAS_W)
+                    && (t_y + i < CANVAS_H))
                         ctx.canvas[(t_y + i) * CANVAS_W + t_x + k] =
-                        mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
+                            mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
                                  ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
                                  (ctx.fg_color & 0x00FFFFFF));
 

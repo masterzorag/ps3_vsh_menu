@@ -473,6 +473,17 @@ static void do_back_action(void)
 
 
 /***********************************************************************
+* execute a screenshot with menu, unconditionally
+***********************************************************************/
+static void do_screenshot_action(void)
+{
+    screenshot(1);
+    vshtask_notify("screenshot saved");
+    play_rco_sound("system_plugin", "snd_system_ok");
+}
+
+
+/***********************************************************************
 * plugin main ppu thread
 ***********************************************************************/
 static void vsh_menu_thread(uint64_t arg)
@@ -583,6 +594,8 @@ static void vsh_menu_thread(uint64_t arg)
                     if(curpad & PAD_CROSS) do_menu_action();
 
                     if(curpad & PAD_CIRCLE) do_back_action();
+
+                    if(curpad & PAD_START) do_screenshot_action();
                 }
 
                 // ...

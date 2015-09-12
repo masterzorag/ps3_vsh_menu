@@ -240,7 +240,7 @@ static Glyph *get_glyph(uint32_t code)
 ***********************************************************************/
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /* unused */)
 {
-    uint8_t i;
+    int32_t i;
     bitmap = mem_alloc(sizeof(Bitmap));
     memset(bitmap, 0, sizeof(Bitmap));
 
@@ -267,7 +267,7 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /
 * uint8_t *utf8   =  utf8 string
 * uint32_t *ucs4  =  variable to hold ucs4 code
 ***********************************************************************/
-static uint8_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
+static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 {
     uint8_t len = 0;
     uint32_t c1 = 0, c2 = 0, c3 = 0, c4 = 0;
@@ -334,7 +334,7 @@ static uint8_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 ***********************************************************************/
 void print_text(int32_t x, int32_t y, const char *str)
 {
-    uint8_t i, k;
+    int32_t i, k;
     uint32_t code = 0;                                              // char unicode
     int32_t t_x = x, t_y = y;                                       // temp x/y
     int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
@@ -491,9 +491,10 @@ void draw_background()
 uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 {
     #ifdef HAVE_SYS_FONT
-    uint32_t code = 0, len = 0;             // char unicode
+    uint32_t code = 0;                 // char unicode
     uint8_t *utf8 = (uint8_t*)str;
-    Glyph *glyph;                           // char glyph
+    int32_t len = 0;
+    Glyph *glyph;                      // char glyph
     memset(&glyph, 0, sizeof(Glyph));
 
     // get render length
@@ -507,9 +508,9 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
         len += glyph->metrics.Horizontal.advance + bitmap->distance;
     }
 
-    return (CANVAS_W - len - bitmap->distance) / alignment;
+    return (uint16_t)((CANVAS_W - len - bitmap->distance) / alignment);
     #else
-    return (CANVAS_W - (strlen(str) * FONT_W)) / alignment;
+    return (uint16_t)((CANVAS_W - (strlen(str) * FONT_W)) / alignment);
     #endif
 }
 

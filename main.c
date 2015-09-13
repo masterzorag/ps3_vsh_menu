@@ -169,7 +169,7 @@ static void draw_frame(CellPadData *data)
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
     {
-        i == line ? set_foreground_color(0xFF00FF00)  // TODO: blink
+        i == line ? set_foreground_color((uint32_t)rand())        // blink
                   : set_foreground_color(menu_colors[1][view]);
 
         ty = 8 + ((FONT_H + FONT_D) * (i + 1));
@@ -239,7 +239,7 @@ static void draw_frame(CellPadData *data)
                 && col > 0 
                 && (col -1) /4 /* ARGB */ == g)  // mark in green selected color component
                 {
-                    set_foreground_color(0xFF00FF00);   // TODO: blink
+                    set_foreground_color((uint32_t)rand());   // blink
 
                     // put a terminator and print one of AA:RR:GG:BB
                     x = ((col -1) %4) *2 /*chars*/ ;
@@ -254,6 +254,9 @@ static void draw_frame(CellPadData *data)
     } //end if(view == 2)
 
     // ...
+
+    // (re)set back after draw last line
+    set_foreground_color(menu_colors[1][view]);
 
     #ifdef HAVE_SSCROLLER
     // testing sine in a scroller

@@ -51,8 +51,6 @@ int32_t vsh_menu_start(uint64_t arg);
 int32_t vsh_menu_stop(void);
 
 
-// temp ARGB color components, to update color on pad input
-uint8_t color_comp[4];
 
 /***********************************************************************
 * sys_ppu_thread_exit, direct over syscall
@@ -295,7 +293,7 @@ static void stop_VSH_Menu(void)
 static void do_updown_action(uint16_t curpad)
 {
     bool flag = 0;
-    uint8_t *value, step, max;
+    uint8_t *value, step, max, color_comp[4];
     uint32_t *color = NULL;
 
     // setup common bounds for selected ground color(col, line)
@@ -319,25 +317,24 @@ static void do_updown_action(uint16_t curpad)
     // update value
     if(curpad & PAD_UP)
     {
-        if((col
-        && *value == 0)
+        if((*value == 0 && col)
         || *value >  0) { *value -= step, flag = 1; }
     }
     else   // & PAD_DOWN
     {
-        if((col
-        && *value == max)
+        if((*value == max && col)
         || *value <  max) { *value += step, flag = 1; }
     }
 
     if(flag)
-    {   // update selected color //bg_color_menu[line] =
+    {   // update selected color
         if(col) *color = ARGB(color_comp[0], color_comp[1],
                               color_comp[2], color_comp[3]);
 
         play_rco_sound("system_plugin", "snd_cursor");
     }
 }
+
 
 /***********************************************************************
 * execute a menu action, based on line(current selected menu entry)
@@ -386,7 +383,6 @@ static void do_menu_action(void)
           case 3:                  // "4: Enter third menu view"
             view = 2;              // change menu view
             line = col = 0;        // on start entry, for colors
-            color_comp[0] = GET_A(menu_colors[col][line]);
             break;
           case 4:                  // "5: Play trophy sound"
             play_rco_sound("system_plugin", "snd_trophy");

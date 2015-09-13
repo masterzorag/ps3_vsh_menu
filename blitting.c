@@ -59,10 +59,10 @@ static uint32_t linear_gradient(uint32_t fr_argb, uint32_t to_argb, uint8_t step
     uint8_t fr[4], to[4];
     float_t st[4];
 
-    fr[0] = GET_A(fr_argb), to[0] = GET_A(to_argb),
-    fr[1] = GET_R(fr_argb), to[1] = GET_R(to_argb),
-    fr[2] = GET_G(fr_argb), to[2] = GET_G(to_argb),
-    fr[3] = GET_B(fr_argb), to[3] = GET_B(to_argb);
+    fr[0] = GET_A(fr_argb), fr[1] = GET_R(fr_argb), 
+    fr[2] = GET_G(fr_argb), fr[3] = GET_B(fr_argb),
+    to[0] = GET_A(to_argb), to[1] = GET_R(to_argb),
+    to[2] = GET_G(to_argb), to[3] = GET_B(to_argb);
 
     st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
     st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
@@ -506,8 +506,7 @@ void draw_background()
         tmp_x++;
         if(tmp_x == CANVAS_W)
         {
-            tmp_x = 0;
-            tmp_y++;
+            tmp_x = 0, tmp_y++;
         }
     }
 }
@@ -547,6 +546,7 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 
 
 #ifdef HAVE_PNG_FONT
+
 /***********************************************************************
 * print text, with data from font.png
 *
@@ -596,8 +596,7 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tmp_x++;
                 if(tmp_x == char_w)
                 {
-                    tmp_x = 0;
-                    tmp_y++;
+                    tmp_x = 0, tmp_y++;
                 }
             }
             tmp_y = 0;
@@ -620,6 +619,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 void print_text(const int32_t x, const int32_t y, const char *str)
 {
     uint8_t c, i, j, tx = 0, ty = 0;
+    uint32_t px;
 
     while(*str != '\0')
     {
@@ -637,19 +637,19 @@ void print_text(const int32_t x, const int32_t y, const char *str)
                 // least significant bit first
                 if(bit[i] & (1 << j))
                 {
-                    // draw a shadow, displaced by + SHADOW_PX
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W] = 
-                    mix_color(
-                      ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W], 0xFF303030);
+                    px = (x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W;
+
+                    // draw a shadow, displaced by (+SHADOW_PX, +SHADOW_PX)
+                    ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX] = mix_color(
+                        ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX], 0x7FFF0000);
 
                     // paint FG pixel
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] =
+                    ctx.canvas[px] =
                         linear_gradient(ctx.fg_color, 0xFF303030, FONT_H, ty);
                 }
                 else
-                {
-                    // paint BG pixel (or do nothing for trasparency)
-                    //ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.bg_color;
+                {   // paint BG pixel (or do nothing for trasparency)
+                    //ctx.canvas[px] = ctx.bg_color;
                 }
             }
 
@@ -666,7 +666,8 @@ void print_text(const int32_t x, const int32_t y, const char *str)
         ++str;
     }
 }
-#endif
+
+#endif // HAVE_XBM_FONT
 
 
 /***********************************************************************
@@ -699,11 +700,11 @@ void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, i
     int32_t i, k;
 
     for(i = 0; i < h; i++)
-        for(k = 0; k < w; k++)
-            if((c_x + k < CANVAS_W) && (c_y + i < CANVAS_H))
-                ctx.canvas[(c_y + i) * CANVAS_W + c_x + k] =
-                    mix_color(ctx.canvas[(c_y + i) * CANVAS_W + c_x + k],
-                        ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
+      for(k = 0; k < w; k++)
+        if((c_x + k < CANVAS_W) && (c_y + i < CANVAS_H))
+          ctx.canvas[(c_y + i) * CANVAS_W + c_x + k] =
+              mix_color(ctx.canvas[(c_y + i) * CANVAS_W + c_x + k],
+                ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
 }
 
 

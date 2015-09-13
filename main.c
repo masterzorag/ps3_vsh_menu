@@ -78,34 +78,32 @@ static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
-
-// max menu entries per view
-static int8_t max_menu[] = {9, 7, 5};
-
 // Every view have its dedicated Bg/Fg color
-static uint32_t menu_colors[2][3] = {
+static uint32_t menu_colors[3][3] = {
 {   // Bg_colors[0][0-2]
     0x7F0000FF,     // blue, semitransparent
     0x70000000,     // black, semitransparent
     0x7F00FF00      // green, semitransparent
 },
-{   // Fg_colors[1][0-2]
+{  // Fg_colors[1][0-2]
     0xFFB0B0B0,     // blue, opac
     0xFFA0A0A0,     // black, opac
     0xFFFFFFFF      // white, opac
-}   /*
-,   we can also add:
-{   - Fg2 to use better gradient color, foreach view
-    0xAARRGGBB,
-    0xAARRGGBB,
-    0xAARRGGBB,
 },
-{   
+{   // Fg_2_colors[2] to use better gradient color, foreach view
+    0xFF600090,
+    0xFF6060A0,
+    0xFF303030
+}
+/*{   
     0xFF303030,     // shadows can be the same across view
     0x00000000,
     0x00000000
 }   */
 };  // better align to 128bits
+
+// max menu entries per view
+static int8_t max_menu[] = {9, 7, 3};
 
 // menu entry strings
 const char *entry_str[3][9] = {
@@ -130,11 +128,9 @@ const char *entry_str[3][9] = {
     "7: test"
 },
 {
-    "1: bg fg",
-    "2: bg fg",
-    "3: bg fg",
-    "4: test",
-    "5: test"
+    "1:bg,fg,f2",
+    "2:bg,fg,f2",
+    "3:bg,fg,f2",
 }
 };
 
@@ -143,15 +139,15 @@ const char *entry_str[3][9] = {
 ***********************************************************************/
 static void draw_frame(CellPadData *data)
 {
-    int8_t i;
     char tmp_ln[8 * (4 + 1)];
     uint16_t tx, ty;
+    int8_t i;
 
-    // all 32bit colors are ARGB, the framebuffer format
-    set_foreground_color(menu_colors[1][view]);
+    /* all 32bit colors are ARGB, the framebuffer format */
 
-    // set the right background color for current view
+    // set the right colors for current view
     set_background_color(menu_colors[0][view]);
+    set_foreground_color(menu_colors[1][view]);
 
     draw_background();
 //	draw_png(0, 0, 0, 0, 0, 720, 400);
@@ -167,7 +163,8 @@ static void draw_frame(CellPadData *data)
     // print all menu entries for view, and the current selected entry in green
     for(i = 0; i < max_menu[view]; i++)
     {
-        i == line ? set_foreground_color(0xFF00FF00) : set_foreground_color(menu_colors[1][view]);
+        i == line ? set_foreground_color(0xFF00FF00)  // TODO: blink
+                  : set_foreground_color(menu_colors[1][view]);
 
         ty = 8 + ((FONT_H + FONT_D) * (i + 1));
         print_text(BORD_D, ty, entry_str[view][i]);
@@ -178,11 +175,11 @@ static void draw_frame(CellPadData *data)
 
     // ...
 
-    // second menu, dump pad data:
+    // second menu, realtime pad data dump:
     if(view == 1)
     {   // used in text position
         uint16_t ty = 180;
-        uint8_t x;
+        uint8_t x = 0;
 
         sprintf(tmp_ln, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
         tx = get_aligned_x(tmp_ln, CENTER);
@@ -193,21 +190,21 @@ static void draw_frame(CellPadData *data)
            replaced by terminator, no need to add 1
            char tmp_ln[8 * (4 + 1)]; */
 
-        tx = 0, ty = 200, x = 0;
+        tx = 0, ty = 200;
         for(i = 0; i < 32; i++)
         {
             sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
             x += 5;
             tmp_ln[x] = '\0';
-            
+
             if(x %8 == 0)
             {   // overwrite last ':' with terminator
                 tmp_ln[x -1] = '\0';
                 if(tx == 0)
-                    tx = get_aligned_x(tmp_ln, CENTER);
+                    tx = get_aligned_x(tmp_ln, CENTER);   // only once
 
                 print_text(tx, ty, tmp_ln);
-                x = 0, ty += (FONT_H + FONT_D);            // additional px to next line
+                x = 0, ty += (FONT_H + FONT_D);      // additional px to next line
             }
         }
 
@@ -215,15 +212,15 @@ static void draw_frame(CellPadData *data)
     else if(view == 2)   // only on third view
     {
         uint32_t *color = NULL;
-        uint8_t x, g;  // ground
+        uint8_t x, g;  // grounds
         // bg[0][0-2]   [(col -1) /4][line]
         // fg[1][0-2]   [(col -1) /4][line]
 
         // print all color entries, and the selected entry in green
-        for(g = 0; g < 2; g++)  // ground, Bg | Fg | ...
+        for(g = 0; g < 3; g++)  // grounds, Bg | Fg | Fg2 ...
         {
-            tx = 180 + (10 /* chars of distance */ * FONT_W) * g;
-            for(i = 0; i < 3; i++)  // first 3 lines: (Bg/Fg) 0, 1, 2
+            tx = 180 + ((8 + 1 /* chars of distance */) * FONT_W) * g;
+            for(i = 0; i < 3; i++)  // first 3 lines/view: 0-2
             {
                 ty = 8 + ((FONT_H + FONT_D) * (i + 1));
                 color = &menu_colors[g][i];
@@ -236,7 +233,7 @@ static void draw_frame(CellPadData *data)
                 && col > 0 
                 && (col -1) /4 /* ARGB */ == g)  // mark in green selected color component
                 {
-                    set_foreground_color(0xFF00FF00);
+                    set_foreground_color(0xFF00FF00);   // TODO: blink
 
                     // put a terminator and print one of AA:RR:GG:BB
                     x = ((col -1) %4) *2 /*chars*/ ;
@@ -258,6 +255,9 @@ static void draw_frame(CellPadData *data)
     move_text();
     #endif
 
+    // position footer info
+    ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D;     // additional px from bottom
+
     // sys memory stats
     read_meminfo(tmp_ln);
     tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
@@ -275,10 +275,10 @@ static void stop_VSH_Menu(void)
     menu_running = 0;
 
     #ifdef HAVE_SYS_FONT
-	  // unbind renderer and kill font-instance
+    // unbind renderer and kill font-instance
     font_finalize();
     #endif
-    
+
     // free heap memory
     destroy_heap();
 
@@ -350,8 +350,8 @@ static void do_leftright_action(uint16_t curpad)
           if(col > 0) { col--, flag = 1; }
       }
       else   // & PAD_RIGHT
-      {   //0-argb-argb, 1+4+4, 
-          if(col < 4 *2) { col++, flag = 1; }
+      {   //0-argb-argb-argb, 1+4+4+4, 
+          if(col < 4 *3) { col++, flag = 1; }
       }
 
       if(flag) play_rco_sound("system_plugin", "snd_cursor");
@@ -460,11 +460,11 @@ static void do_menu_action(void)
 
 
 /***********************************************************************
-* execute a menu_back action, unconditionally
+* execute a back action, unconditionally
 ***********************************************************************/
 static void do_back_action(void)
 {
-    view = line = col = 0;
+    if(view) view = line = col = 0;
 }
 
 
@@ -474,7 +474,6 @@ static void do_back_action(void)
 static void do_screenshot_action(void)
 {
     screenshot(1);
-    vshtask_notify("screenshot saved");
     play_rco_sound("system_plugin", "snd_system_ok");
 }
 

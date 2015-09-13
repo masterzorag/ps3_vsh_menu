@@ -157,8 +157,7 @@ static void draw_frame(CellPadData *data)
     set_foreground_color(menu_colors[1][view]);
 
     draw_background();
-//	draw_png(0, 0, 0, 0, 0, 720, 400);
-
+    draw_png(0, 100, 104, 0, 0, 163, 296);
 
     #ifdef HAVE_STARFIELD
     draw_stars();       // to keep them under text lines
@@ -565,7 +564,7 @@ static void vsh_menu_thread(uint64_t arg)
 
 
                       // load background image
-                      //load_png_bitmap(0, "/path/to.png");
+                      load_png_bitmap(0, "/dev_hdd0/tentacle.png");
 
                       // stop vsh pad
                       start_stop_vsh_pad(0);

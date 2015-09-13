@@ -39,8 +39,7 @@ void init_star(STAR *star, const uint16_t i)
     star->speed = 2 + (int)(2.0 * (rand()/(RAND_MAX+1.0)));
 
     /* the closer to the viewer the brighter */
-    //star->color = i >> 2;
-    star->color = i * 20;
+    star->color = i >> 2;
 }
 
 void init_once(/* stars, first run */)

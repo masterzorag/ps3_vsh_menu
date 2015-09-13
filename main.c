@@ -72,6 +72,13 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 
 
 ////////////////////////////////////////////////////////////////////////
+// TIMING
+static clock_t startm, stopm;
+static uint16_t tick = 0;
+static double fps = 0;
+
+
+////////////////////////////////////////////////////////////////////////
 // BLITTING
 static bool   menu_running = 0; // vsh menu off(0) or on(1)
 static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
@@ -260,8 +267,22 @@ static void draw_frame(CellPadData *data)
 
     // sys memory stats
     read_meminfo(tmp_ln);
-    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;    // additional px from R margin
-    print_text(tx, CANVAS_H - (FONT_H + FONT_D) - BORD_D, tmp_ln); // from bottom
+    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;     // additional px from R margin
+    print_text(tx, ty, tmp_ln);
+
+
+    // get timing, eventually compute fps
+    stopm = clock();
+    if(((double)stopm-startm) > 4000000)
+    {   
+        fps = (double)(tick / (((double)stopm-startm) / CLOCKS_PER_SEC));
+        startm = clock(), tick = 0;                 // reset counter
+    }
+    sprintf(tmp_ln, "%2.1f fps", fps);
+    print_text(BORD_D, ty, tmp_ln);
+
+    // keep track of drawn frames
+    tick++;
 
 } // end draw_frame()
 
@@ -551,6 +572,9 @@ static void vsh_menu_thread(uint64_t arg)
 
                       // set menu_running
                       menu_running = 1;
+
+                      // timer start
+                      startm = clock();
 
                       break;
 

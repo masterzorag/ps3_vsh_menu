@@ -11,8 +11,8 @@
 
 // font constants
 #ifdef HAVE_SYS_FONT
-#define FONT_W         16.f            // font width
-#define FONT_H         16.f            // font height
+#define FONT_W         18.f            // font width
+#define FONT_H         18.f            // font height
 #define FONT_WEIGHT    1.f             // font weight
 #define FONT_CACHE_MAX 256             // max glyph cache count
 
@@ -74,21 +74,21 @@ extern int32_t LINE_HEIGHT;
 
 // font cache
 typedef struct _Glyph {
-	uint32_t code;                           // char unicode
-	CellFontGlyphMetrics metrics;            // glyph metrics
-	uint16_t w;                              // image width 
-	uint16_t h;                              // image height
-	uint8_t *image;                          // addr -> image data
+    uint32_t code;                           // char unicode
+    CellFontGlyphMetrics metrics;            // glyph metrics
+    uint16_t w;                              // image width 
+    uint16_t h;                              // image height
+    uint8_t *image;                          // addr -> image data
 } Glyph;
 
 typedef struct _Bitmap {
-	CellFontHorizontalLayout horizontal_layout;   // struct -> horizontal text layout info
-	float font_w, font_h;                         // char w/h
-	float weight, slant;                          // line weight and char slant
-	int32_t distance;                             // distance between chars
-	int32_t count;                                // count of current cached glyphs
-	int32_t max;                                  // max glyph into this cache
-	Glyph glyph[FONT_CACHE_MAX];                  // glyph struct
+    CellFontHorizontalLayout horizontal_layout;   // struct -> horizontal text layout info
+    float font_w, font_h;                         // char w/h
+    float weight, slant;                          // line weight and char slant
+    int32_t distance;                             // distance between chars
+    int32_t count;                                // count of current cached glyphs
+    int32_t max;                                  // max glyph into this cache
+    Glyph glyph[FONT_CACHE_MAX];                  // glyph struct
 } Bitmap;
 #endif
 
@@ -100,12 +100,10 @@ typedef struct _DrawCtx{
     uint32_t fg_color;     // foreground color
 
     #ifdef HAVE_SYS_FONT
-	uint32_t *font_cache;  // addr of glyph bitmap cache buffer
-	CellFont font;                
-	CellFontRenderer renderer;
-    #endif
-
-    #ifdef HAVE_PNG_FONT
+    uint32_t *font_cache;  // addr of glyph bitmap cache buffer
+    CellFont font;
+    CellFontRenderer renderer;
+    #elif HAVE_PNG_FONT
     uint32_t *font;        // addr of decoded png font
     #endif
 
@@ -132,8 +130,8 @@ void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, i
 #define LEFT      0   // useless
 #define RIGHT     1
 #define CENTER    2
-uint16_t get_aligned_x(const char *str, uint8_t alignment);
-void print_text(int32_t x, int32_t y, const char *str);
+uint16_t get_aligned_x(const char *str, const uint8_t alignment);
+void print_text(const int32_t x, const int32_t y, const char *str);
 
 void screenshot(uint8_t mode);
 

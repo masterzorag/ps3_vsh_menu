@@ -7,7 +7,7 @@
 
 
 // graphic buffers and drawing context
-static DrawCtx ctx;                                 // drawing context
+static DrawCtx ctx __attribute__((aligned(16)));    // drawing context
 
 // display values
 static uint32_t unk1 = 0, offset = 0, pitch = 0;

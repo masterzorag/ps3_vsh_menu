@@ -641,7 +641,7 @@ void print_text(const int32_t x, const int32_t y, const char *str)
 
                     // draw a shadow, displaced by (+SHADOW_PX, +SHADOW_PX)
                     ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX] = mix_color(
-                        ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX], 0x7FFF0000);
+                        ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX], 0x7FAAAAAA);
 
                     // paint FG pixel
                     ctx.canvas[px] =

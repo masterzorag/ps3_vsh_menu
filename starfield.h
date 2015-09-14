@@ -6,10 +6,11 @@
 typedef struct _STAR{
     float     xpos;
     float     ypos;
+    uint8_t   color;
     uint16_t  zpos;
     uint16_t  speed;
-    uint8_t   color;
-} STAR;
+} STAR
+__attribute__((aligned(16)));
 
 void init_star(STAR *star, const uint16_t i);
 void init_once(void);

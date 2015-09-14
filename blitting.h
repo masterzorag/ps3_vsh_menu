@@ -66,7 +66,8 @@ typedef struct _Buffer{
     uint32_t *addr;        // buffer address
     uint16_t  w;           // buffer width
     uint16_t  h;           // buffer height
-} Buffer;
+} Buffer
+__attribute__((aligned(8)));
 
 #ifdef HAVE_SYS_FONT
 
@@ -108,7 +109,8 @@ typedef struct _DrawCtx{
     #endif
 
     Buffer   png[PNG_MAX]; // bitmaps
-} DrawCtx;
+}
+DrawCtx __attribute__((aligned(16)));
 
 
 void pause_RSX_rendering(void);

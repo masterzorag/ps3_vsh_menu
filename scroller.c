@@ -12,11 +12,11 @@
 static int32_t sx = CANVAS_W;
 
 /* 256 characters, 64 * 4 lines or switch from uint8_t i below */
-static const char ss[S_LEN] = "\
-    HI FOLKS, NOW WE HAVE A sinuscroller GREETER TOO !!! also: s\
-hadowed, color text          * * *          Greets goes to: play\
+static const char ss[S_LEN] __attribute__((aligned(16))) = "\
+    Hi Folks, now we have a Sinusscroller greeter too !!! also: \
+shadowed, color text         * * *          Greets goes to: play\
 stationhax.it, psx-place.com and all the ps3 devs around !      \
-           * peace and love *                                  .";
+                      * peace and love *                       .";
 /*-------------------------------------------------------------*/
 
 /***********************************************************************

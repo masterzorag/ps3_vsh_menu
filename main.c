@@ -85,8 +85,8 @@ static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
-// Every view have its dedicated Bg/Fg color
-static uint32_t menu_colors[3][3] = {
+// Every view have its dedicated Bg/Fg/Fg2 color default combination
+static uint32_t menu_colors[4][3] __attribute__((aligned(16))) = {
 {   // Bg_colors[0][0-2]
     0x7F0000FF,     // blue, semitransparent
     0x70000000,     // black, semitransparent
@@ -101,19 +101,19 @@ static uint32_t menu_colors[3][3] = {
     0xFF600090,
     0xFF6060A0,
     0xFF303030
-}
-/*{   
+},
+{   // unused at the moment
     0xFF303030,     // shadows can be the same across view
     0x00000000,
     0x00000000
-}   */
-};  // better align to 128bits
+}
+};
 
 // max menu entries per view
 static int8_t max_menu[] = {9, 7, 3};
 
 // menu entry strings
-const char *entry_str[3][9] = {
+const char *entry_str[3][9] __attribute__((aligned(4))) = {
 {
     "1: Make a single beep",
     "2: Make a double beep",
@@ -146,7 +146,7 @@ const char *entry_str[3][9] = {
 ***********************************************************************/
 static void draw_frame(CellPadData *data)
 {
-    char tmp_ln[8 * (4 + 1)];
+    char tmp_ln[8 * (4 + 1)] __attribute__((aligned(16)));
     uint16_t tx, ty;
     int8_t i;
 
@@ -158,12 +158,12 @@ static void draw_frame(CellPadData *data)
 
     draw_background();
     
-    if(view != 1) 
-        draw_png(0, 100, 104, 0, 0, 163, 296);
-
     #ifdef HAVE_STARFIELD
     draw_stars();       // to keep them under text lines
     #endif
+
+    if(view != 1) 
+        draw_png(0, 100, 104, 0, 0, 163, 296);
 
     // print headline string, coordinates in canvas
     print_text(BORD_D, BORD_D, "PS3 VSH Menu");
@@ -244,7 +244,7 @@ static void draw_frame(CellPadData *data)
                     set_foreground_color((uint32_t)rand());   // blink
 
                     // put a terminator and print one of AA:RR:GG:BB
-                    x = ((col -1) %4) *2 /*chars*/ ;
+                    x = ((col -1) %4) *2 /*chars*/;
                     tmp_ln[x +2] = '\0';
                     print_text(tx + (x * FONT_W), ty, &tmp_ln[x]);
 

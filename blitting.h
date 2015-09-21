@@ -91,6 +91,15 @@ typedef struct _Bitmap {
     int32_t max;                                  // max glyph into this cache
     Glyph glyph[FONT_CACHE_MAX];                  // glyph struct
 } Bitmap;
+
+void font_finalize(void);
+void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
+
+#elif HAVE_XBM_FONT
+
+#define LINEAR_GRADIENT_STEP      (FONT_H /2)     // steps we split delta
+void update_gradient(const uint32_t *a, const uint32_t *b);
+
 #endif
 
 // drawing context

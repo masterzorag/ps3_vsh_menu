@@ -153,35 +153,54 @@ static void draw_frame(CellPadData *data)
     int8_t i;
 
     /* all 32bit colors are ARGB, the framebuffer format */
+    uint32_t blink_color = (uint32_t)rand();
 
     // set the right colors for current view
     set_background_color(menu_colors[0][view]);
     set_foreground_color(menu_colors[1][view]);
+    #ifdef HAVE_XBM_FONT
+    update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
+    #endif
 
     draw_background();
-    
+
     #ifdef HAVE_STARFIELD
     draw_stars();       // to keep them under text lines
     #endif
 
-    if(view != 1) 
+    if(view != 1)
         draw_png(0, 100, 104, 0, 0, 163, 296);
+
+    // print all menu entries for view, and blink the current selected entry
+    for(i = 0; i < max_menu[view]; i++)
+    {
+        uint32_t *tc = NULL;
+        ty = 8 + ((FONT_H + FONT_D) * (i + 1));
+
+        if(i == line)                   // selected entry, blink
+        {
+            tc = &blink_color;
+            set_foreground_color(*tc);
+            #ifdef HAVE_XBM_FONT
+            update_gradient(tc, &menu_colors[2][view]);   // do same color
+            #endif
+        }
+
+        print_text(BORD_D, ty, entry_str[view][i]);
+
+        // (re)set back if just draw selectd line
+        if(tc)
+        {
+            set_foreground_color(menu_colors[1][view]);
+            #ifdef HAVE_XBM_FONT
+            update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
+            #endif
+        }
+    }
+    // we pass with default colors setted, per view
 
     // print headline string, coordinates in canvas
     print_text(BORD_D, BORD_D, "PS3 VSH Menu");
-
-    // print all menu entries for view, and the current selected entry in green
-    for(i = 0; i < max_menu[view]; i++)
-    {
-        i == line ? set_foreground_color((uint32_t)rand())        // blink
-                  : set_foreground_color(menu_colors[1][view]);
-
-        ty = 8 + ((FONT_H + FONT_D) * (i + 1));
-        print_text(BORD_D, ty, entry_str[view][i]);
-    }
-
-    // (re)set back after draw last line
-    set_foreground_color(menu_colors[1][view]);
 
     // ...
 
@@ -221,46 +240,53 @@ static void draw_frame(CellPadData *data)
     }
     else if(view == 2)   // only on third view
     {
-        uint32_t *color = NULL;
+        uint32_t *tc = NULL;
         uint8_t x, g;  // grounds
-        // bg[0][0-2]   [(col -1) /4][line]
-        // fg[1][0-2]   [(col -1) /4][line]
 
-        // print all color entries, and the selected entry in green
-        for(g = 0; g < 3; g++)  // grounds, Bg | Fg | Fg2 ...
+        // print all color entries: Bg, Fg, Fg2, per line
+        for(g = 0; g < 3; g++)  // grounds as coloumns
         {
             tx = 180 + ((8 + 1 /* chars of distance */) * FONT_W) * g;
-            for(i = 0; i < 3; i++)  // first 3 lines/view: 0-2
+            // first 3 lines/view: 0-2
+            for(i = 0; i < 3; i++)
             {
                 ty = 8 + ((FONT_H + FONT_D) * (i + 1));
-                color = &menu_colors[g][i];
-                set_foreground_color(*color);
 
-                sprintf(tmp_ln, "%.8x", *color);
+                tc = &menu_colors[g][i];
+                set_foreground_color(*tc);
+                #ifdef HAVE_XBM_FONT
+                update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
+                #endif
+
+                sprintf(tmp_ln, "%.8x", *tc);
                 print_text(tx, ty, tmp_ln);
 
-                if(i == line 
+                if(i == line                         // selected entry
                 && col > 0 
-                && (col -1) /4 /* ARGB */ == g)  // mark in green selected color component
+                && (col -1) /4 /* ARGB */ == g)      // selected color component
                 {
-                    set_foreground_color((uint32_t)rand());   // blink
+                    tc = &blink_color;               // blink
+                    set_foreground_color(*tc);
+                    #ifdef HAVE_XBM_FONT
+                    update_gradient(tc, &menu_colors[2][i]);        // do same color?
+                    #endif
 
                     // put a terminator and print one of AA:RR:GG:BB
                     x = ((col -1) %4) *2 /*chars*/;
                     tmp_ln[x +2] = '\0';
                     print_text(tx + (x * FONT_W), ty, &tmp_ln[x]);
-
-                    // (re)set back after marked text
-                    set_foreground_color(*color);
                 }
             }
         }
-    } //end if(view == 2)
+    } // end (view == 2)
 
     // ...
 
     // (re)set back after draw last line
     set_foreground_color(menu_colors[1][view]);
+    #ifdef HAVE_XBM_FONT
+    update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
+    #endif
 
     #ifdef HAVE_SSCROLLER
     // testing sine in a scroller

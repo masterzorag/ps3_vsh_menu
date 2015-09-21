@@ -33,46 +33,16 @@ void pause_RSX_rendering()
 * uint32_t bg = background color
 * uint32_t fg = foreground color
 ***********************************************************************/
-static uint32_t mix_color(const uint32_t bg, uint32_t fg)
+static uint32_t mix_color(const uint32_t bg, const uint32_t fg)
 {
     uint32_t a = fg >>24;
     if(a == 0) return bg;
 
     uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
     uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
-    fg = a + ((bg >>24) * (255 - a) / 255);
+    uint32_t Fg = a + ((bg >>24) * (255 - a) / 255);
 
-    return (fg <<24) | ((rb | g) >>8);
-}
-
-
-/***********************************************************************
-* linear gradient (ARGB)
-*
-* uint32_t fr_argb = foreground start color
-* uint32_t to_argb = foreground end color
-* uint8_t steps    = number of chunk we split fading
-* uint8_t step     = which step we compute
-***********************************************************************/
-static uint32_t linear_gradient(uint32_t fr_argb, uint32_t to_argb, uint8_t steps, uint8_t step)
-{
-    uint8_t fr[4], to[4];
-    float_t st[4];
-
-    fr[0] = GET_A(fr_argb), fr[1] = GET_R(fr_argb), 
-    fr[2] = GET_G(fr_argb), fr[3] = GET_B(fr_argb),
-    to[0] = GET_A(to_argb), to[1] = GET_R(to_argb),
-    to[2] = GET_G(to_argb), to[3] = GET_B(to_argb);
-
-    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
-    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
-    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
-    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
-
-    return ARGB((int)fr[0] + (int)(st[0] * step),
-                (int)fr[1] + (int)(st[1] * step),
-                (int)fr[2] + (int)(st[2] * step),
-                (int)fr[3] + (int)(st[3] * step));
+    return (Fg <<24) | ((rb | g) >>8);
 }
 
 
@@ -607,6 +577,53 @@ void print_text(int32_t x, int32_t y, const char *str)
 }
 
 #elif HAVE_XBM_FONT
+
+/***********************************************************************
+* linear gradient (ARGB)
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+* uint8_t steps   = number of chunk we split fading
+* uint8_t step    = which step we compute and return
+***********************************************************************/
+static uint32_t linear_gradient(const uint32_t *a, const uint32_t *b, const uint8_t steps, const uint8_t step)
+{
+    uint8_t fr[4], to[4];
+    float_t st[4];
+
+    fr[0] = GET_A(*a), fr[1] = GET_R(*a), fr[2] = GET_G(*a), fr[3] = GET_B(*a),
+    to[0] = GET_A(*b), to[1] = GET_R(*b), to[2] = GET_G(*b), to[3] = GET_B(*b);
+
+    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
+    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
+    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
+    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
+
+    return ARGB((int)fr[0] + (int)(st[0] * step),
+                (int)fr[1] + (int)(st[1] * step),
+                (int)fr[2] + (int)(st[2] * step),
+                (int)fr[3] + (int)(st[3] * step));
+}
+
+/***********************************************************************
+* update_gradient
+*
+* precompute palette to use in print_text() and setup colors range
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+***********************************************************************/
+void update_gradient(const uint32_t *a, const uint32_t *b)
+{
+    for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
+    {
+        if(*a != *b)
+            ctx.fading_color[i] = linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
+        else
+            ctx.fading_color[i] = *a;
+    }
+}
+
 #include "xbm_font.h"
 
 /***********************************************************************

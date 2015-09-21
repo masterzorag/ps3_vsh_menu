@@ -616,54 +616,47 @@ void print_text(int32_t x, int32_t y, const char *str)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(const int32_t x, const int32_t y, const char *str)
+void print_text(int32_t x, int32_t y, const char *str)
 {
-    uint8_t c, i, j, tx = 0, ty = 0;
-    uint32_t px;
+    uint8_t *c, i, j, tx = 0, ty = 0;
+    uint32_t *px = NULL;
 
     while(*str != '\0')
     {
-        // address the font bitmap
-        c = *str;
-        if(c < LOWER_ASCII_CODE || c > UPPER_ASCII_CODE) c = 180;
+        c = (uint8_t*)str++;          // address the current char
 
-        char *bit = xbmFont[c - LOWER_ASCII_CODE];
+        if(*c < LOWER_ASCII_CODE
+        || *c > UPPER_ASCII_CODE)
+        {  x += FONT_W; continue; }   // skipped, move one char in canvas
+
+        char *bit = xbmFont[*c - LOWER_ASCII_CODE];
 
         // dump bits map (bytes_per_line 2, size 32 char of 8 bit)
         for(i = 0; i < ((FONT_W * FONT_H) / BITS_IN_BYTE); i++)
         {
             for(j = 0; j < BITS_IN_BYTE; j++)
             {
-                // least significant bit first
-                if(bit[i] & (1 << j))
+                if(bit[i] & (1 << j))     // least significant bit first
                 {
-                    px = (x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W;
+                    px = &ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W];
 
-                    // draw a shadow, displaced by (+SHADOW_PX, +SHADOW_PX)
-                    ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX] = mix_color(
-                        ctx.canvas[px + SHADOW_PX * CANVAS_W + SHADOW_PX], 0x7FAAAAAA);
+                    // paint FG pixel with precomputed fading colors
+                    *px = ctx.fading_color[ty /2];
 
-                    // paint FG pixel
-                    ctx.canvas[px] =
-                        linear_gradient(ctx.fg_color, 0xFF303030, FONT_H, ty);
-                }
-                else
-                {   // paint BG pixel (or do nothing for trasparency)
-                    //ctx.canvas[px] = ctx.bg_color;
+                    // displace shadow by (+SHADOW_PX, +SHADOW_PX)
+                    px += (SHADOW_PX * CANVAS_W + SHADOW_PX);
+
+                    // paint the shadow
+                    *px = mix_color(*px, ctx.bg_color & 0x66000000);
                 }
             }
 
             tx++;
             if(tx == (FONT_W / BITS_IN_BYTE))
-            {
                 tx = 0, ty++;        // step to decrease gradient
-            }
         }
-        ty = 0;
-
         // glyph painted, move one char right in text
-        x += FONT_W;
-        ++str;
+        x += FONT_W, ty = 0;        //++str;
     }
 }
 
@@ -695,16 +688,21 @@ int32_t load_png_bitmap(int32_t idx, const char *path)
 * int32_t w        =  width of png part to blit
 * int32_t h        =  height of png part to blit
 ***********************************************************************/
-void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, int32_t w, int32_t h)
+void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
 {
     int32_t i, k;
+    uint32_t *px = NULL;
 
     for(i = 0; i < h; i++)
-      for(k = 0; k < w; k++)
-        if((c_x + k < CANVAS_W) && (c_y + i < CANVAS_H))
-          ctx.canvas[(c_y + i) * CANVAS_W + c_x + k] =
-              mix_color(ctx.canvas[(c_y + i) * CANVAS_W + c_x + k],
-                ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
+        for(k = 0; k < w; k++)
+            if((c_x + k < CANVAS_W) 
+            && (c_y + i < CANVAS_H))
+            {
+                px = &ctx.canvas[(c_y + i) * CANVAS_W + c_x + k];
+
+                *px = mix_color(*px,
+                                ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
+            }
 }
 
 

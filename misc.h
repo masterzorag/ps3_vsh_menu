@@ -51,7 +51,7 @@ void play_rco_sound(const char *plugin, const char *sound);
 void buzzer(uint8_t mode);
 
 void get_temperature(uint32_t _dev, uint32_t *_temp);
-void read_temperature(char *data);
+void read_temperature(uint32_t *t1, uint32_t *t2);
 
 void read_meminfo(char *data);
 

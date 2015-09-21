@@ -77,6 +77,8 @@ static clock_t startm, stopm;
 static uint16_t tick = 0;
 static double fps = 0;
 
+static uint32_t t1 = 0, t2 = 0;   // keep track of temperatures
+
 
 ////////////////////////////////////////////////////////////////////////
 // BLITTING
@@ -266,23 +268,28 @@ static void draw_frame(CellPadData *data)
     move_text();
     #endif
 
-    // position footer info
-    ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D;     // additional px from bottom
+    /* position footer info */
+    ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D;  // additional px from bottom
 
-    // sys memory stats
+    // sys memory stats, on the right
     read_meminfo(tmp_ln);
-    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;     // additional px from R margin
+    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;  // additional px from R margin
     print_text(tx, ty, tmp_ln);
 
 
-    // get timing, eventually compute fps
+    // get timing, eventually compute fps and read temperature data
     stopm = clock();
-    if(((double)stopm-startm) > 4000000)
-    {   
+    if(((double)stopm-startm) > 3500000)
+    {
         fps = (double)(tick / (((double)stopm-startm) / CLOCKS_PER_SEC));
-        startm = clock(), tick = 0;                 // reset counter
+
+        startm = clock(), tick = 0;              // reset counter
+
+        read_temperature(&t1, &t2);              // update temperature data
     }
-    sprintf(tmp_ln, "%2.1f fps", fps);
+
+    // report stats, on the left
+    sprintf(tmp_ln, "%2.1ffps, C:%iC, R:%iC", fps, t1, t2);
     print_text(BORD_D, ty, tmp_ln);
 
     // keep track of drawn frames

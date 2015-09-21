@@ -165,15 +165,13 @@ void get_temperature(uint32_t _dev, uint32_t *_temp)
 }
 
 /***********************************************************************
-* a wrapper to read temperature data and compose text string from
+* a wrapper to read CPU and RSX temperature data
 ***********************************************************************/
-void read_temperature(char *data)
+void read_temperature(uint32_t *t1, uint32_t *t2)
 {
-    uint32_t t1 = 0, t2 = 0;
-    get_temperature(0, &t1); // 3E030000 -> 3E.03°C -> 62.(03/256)°C
-    get_temperature(1, &t2);
-    t1 >>= 24, t2 >>= 24;
-    sprintf(data, "CPU:%iC, RSX:%iC", t1, t2);
+    get_temperature(0, t1); // 3E030000 -> 3E.03°C -> 62.(03/256)°C
+    get_temperature(1, t2);
+    *t1 >>= 24, *t2 >>= 24;
 }
 
 /***********************************************************************
@@ -187,6 +185,6 @@ void read_meminfo(char *data)
     } meminfo;
     system_call_1(352, (uint64_t) &meminfo);
 
-    sprintf(data, "memfree:%i/%ikb", meminfo.avail /1024, meminfo.total /1024);
+    sprintf(data, "freemem:%i/%ikb", meminfo.avail /1024, meminfo.total /1024);
 }
 

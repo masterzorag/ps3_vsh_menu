@@ -39,14 +39,14 @@ PPU_PRX_LDLIBS += -lnet_stub
 
 PPU_CFLAGS += -Os -ffunction-sections -fdata-sections \
               -fno-builtin-printf -nodefaultlibs -std=gnu99 \
-              -Wno-shadow -Wno-unused-parameter
+              -Wno-shadow -Wno-unused-parameter -ffast-math
 
 
 PPU_CFLAGS += -DDEBUG
 
-PPU_CFLAGS += -DHAVE_SYS_FONT
+#PPU_CFLAGS += -DHAVE_SYS_FONT
 #PPU_CFLAGS += -DHAVE_PNG_FONT
-#PPU_CFLAGS += -DHAVE_XBM_FONT
+PPU_CFLAGS += -DHAVE_XBM_FONT
 
 PPU_CFLAGS += -DHAVE_STARFIELD
 PPU_CFLAGS += -DHAVE_SSCROLLER

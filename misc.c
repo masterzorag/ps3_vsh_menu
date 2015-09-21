@@ -161,7 +161,7 @@ void buzzer(uint8_t mode)
 ***********************************************************************/
 void get_temperature(uint32_t _dev, uint32_t *_temp)
 {
-    system_call_2(383, (uint64_t)_dev, (uint32_t)_temp);
+    system_call_2(383, (uint64_t)(uint32_t) _dev, (uint64_t)(uint32_t) _temp);
 }
 
 /***********************************************************************

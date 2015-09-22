@@ -18,7 +18,9 @@ PPU_INCDIRS = -I ./inc
 PPU_PRX_TARGET = ps3_vsh_menu.prx
 
 #PPU_PRX_LDFLAGS = -L ./lib -Wl, --strip-unused-data
-PPU_PRX_LDFLAGS = -L ./lib --gc-sections --as-needed
+PPU_PRX_LDFLAGS = -L ./lib -Wl,--as-needed,--warn-once
+#PPU_PRX_LDFLAGS = -L ./lib -Wl,--as-needed,--no-undefined,--noinhibit-exec,--warn-once,--verbose
+
 PPU_PRX_STRIP_FLAGS = -s
 
 PPU_PRX_LDLIBS  = -lfs_stub \

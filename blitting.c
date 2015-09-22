@@ -422,7 +422,7 @@ void init_graphic()
     dump_bg();
 
     // init first frame with background dump
-    memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
+    memcpy((uint32_t*)ctx.canvas, (uint32_t*)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 
@@ -439,7 +439,7 @@ void flip_frame()
             *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W /2];
 
     // after flip, clear frame buffer with background
-    memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
+    memcpy((uint32_t*)ctx.canvas, (uint32_t*)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 
@@ -735,7 +735,7 @@ uint8_t bmp_header[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-void screenshot(uint8_t mode)
+void screenshot(const uint8_t mode)
 {
     FILE *fd = NULL;
     uint32_t tmp = 0;

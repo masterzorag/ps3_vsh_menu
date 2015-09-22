@@ -46,7 +46,7 @@ SYS_MODULE_STOP (vsh_menu_stop);
 #define STOP_THREAD_NAME    "vsh_menu_stop_thread"
 
 static sys_ppu_thread_t vsh_menu_tid = -1;
-static int8_t done = 0;
+static bool done = 0;
 int32_t vsh_menu_start(uint64_t arg);
 int32_t vsh_menu_stop(void);
 

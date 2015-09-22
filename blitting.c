@@ -686,7 +686,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 * int32_t idx      = index of png, max 4 (0 - 3)
 * const char *path = path to png file
 ***********************************************************************/
-int32_t load_png_bitmap(int32_t idx, const char *path)
+int32_t load_png_bitmap(const int32_t idx, const char *path)
 {
     if(idx > PNG_MAX) return -1;
     ctx.png[idx] = load_png(path);

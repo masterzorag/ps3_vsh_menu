@@ -344,6 +344,15 @@ static void stop_VSH_Menu(void)
     rsx_fifo_pause(0);
 }
 
+/***********************************************************************
+* execute a screenshot with menu, unconditionally
+***********************************************************************/
+static void do_screenshot_action(void)
+{
+    screenshot(1);
+    play_rco_sound("system_plugin", "snd_system_ok");
+}
+
 
 /***********************************************************************
 * execute a menu action, based on coloumn(current selected menu entry)
@@ -450,8 +459,7 @@ static void do_menu_action(void)
             play_rco_sound("system_plugin", "snd_system_ok");
             break;
           case 6:                  // "7: Make screenshot with menu"
-            screenshot(1);         //
-            play_rco_sound("system_plugin", "snd_system_ok");
+            do_screenshot_action();
             break;
           case 7:                  // "8: Reset PS3"
             stop_VSH_Menu();
@@ -523,16 +531,6 @@ static void do_menu_action(void)
 static void do_back_action(void)
 {
     if(view) view = line = col = 0;
-}
-
-
-/***********************************************************************
-* execute a screenshot with menu, unconditionally
-***********************************************************************/
-static void do_screenshot_action(void)
-{
-    screenshot(1);
-    play_rco_sound("system_plugin", "snd_system_ok");
 }
 
 

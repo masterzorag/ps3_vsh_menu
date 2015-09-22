@@ -51,8 +51,9 @@
                      ((int32_t)4)))) * ((int32_t)4))) + (BASE))
 
 // compose ARGB color by components
-#define ARGB(a, r, g, b) ((((a) &0xFF) <<24) | (((r) &0xFF) <<16) \
-                        | (((g) &0xFF) << 8) | (((b) &0xFF) << 0))
+#define ARGB(a, r, g, b) ( \
+          (((a) &0xFF) <<24) | (((r) &0xFF) <<16) | \
+          (((g) &0xFF) << 8) | (((b) &0xFF) << 0))
 
 // extract single component form ARGB color
 #define GET_A(color) ((color >>24) &0xFF)
@@ -60,14 +61,6 @@
 #define GET_G(color) ((color >> 8) &0xFF)
 #define GET_B(color) ((color >> 0) &0xFF)
 
-
-// graphic buffers
-typedef struct _Buffer{
-    uint32_t *addr;        // buffer address
-    uint16_t  w;           // buffer width
-    uint16_t  h;           // buffer height
-} Buffer
-__attribute__((aligned(8)));
 
 #ifdef HAVE_SYS_FONT
 
@@ -101,6 +94,16 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
 void update_gradient(const uint32_t *a, const uint32_t *b);
 
 #endif
+
+
+
+// graphic buffers
+typedef struct _Buffer{
+    uint32_t *addr;        // buffer address
+    uint16_t  w;           // buffer width
+    uint16_t  h;           // buffer height
+} Buffer
+__attribute__((aligned(8)));
 
 // drawing context
 typedef struct _DrawCtx{

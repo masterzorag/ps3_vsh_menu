@@ -174,8 +174,8 @@ static void render_glyph(int32_t idx, uint32_t code)
     FontSetupRenderScalePixel(&ctx.font, bitmap->font_w, bitmap->font_h);
     FontSetupRenderEffectWeight(&ctx.font, bitmap->weight);
 
-    x = ((int32_t)bitmap->font_w) * 2, w = x *2;
-    y = ((int32_t)bitmap->font_h) * 2, h = y *2;
+    x = ((int32_t)bitmap->font_w) *2, w = x *2;
+    y = ((int32_t)bitmap->font_h) *2, h = y *2;
 
     // set surface
     FontRenderSurfaceInit(&surface, NULL, w, 1, w, h);

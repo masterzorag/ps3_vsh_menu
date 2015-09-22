@@ -127,7 +127,7 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "8: Reset PS3",
     "9: Shutdown PS3"
 },
-{   // red menu
+{   // dump pad data menu
     "1: test",
     "2: screenshot",
     "3: Alpha",
@@ -136,7 +136,7 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "6: Blue",
     "7: test"
 },
-{
+{   // setup color menu
     "1:bg,fg,f2",
     "2:bg,fg,f2",
     "3:bg,fg,f2",
@@ -214,10 +214,9 @@ static void draw_frame(CellPadData *data)
         tx = get_aligned_x(tmp_ln, CENTER);
         print_text(tx, ty, tmp_ln);
 
-        /* hexdump pad data: store in text 8 buttons in a row
-           in "%.4x" format plus 1 for ':', last one will be
-           replaced by terminator, no need to add 1
-           char tmp_ln[8 * (4 + 1)]; */
+        /* hexdump pad data: store in text 8 buttons in a row in "%.4x" format
+           plus 1 for ':', last one is replaced by terminator, no need to add 1:
+           [8 * (4 + 1)]; */
 
         tx = 0, ty = 200;
         for(i = 0; i < 32; i++)
@@ -318,8 +317,7 @@ static void draw_frame(CellPadData *data)
     sprintf(tmp_ln, "%2.1ffps, C:%iC, R:%iC", fps, t1, t2);
     print_text(BORD_D, ty, tmp_ln);
 
-    // keep track of drawn frames
-    tick++;
+    tick++;               // keep track of drawn frames
 
 } // end draw_frame()
 
@@ -329,20 +327,17 @@ static void draw_frame(CellPadData *data)
 ***********************************************************************/
 static void stop_VSH_Menu(void)
 {
-    // menu off
-    menu_running = 0;
+    menu_running = 0;     // menu off
 
     #ifdef HAVE_SYS_FONT
-    // unbind renderer and kill font-instance
-    font_finalize();
+    font_finalize();      // unbind renderer and kill font-instance
     #endif
 
-    // free heap memory
-    destroy_heap();
+    destroy_heap();       // free heap memory
 
-    // continue rsx rendering
-    rsx_fifo_pause(0);
+    rsx_fifo_pause(0);    // continue rsx rendering
 }
+
 
 /***********************************************************************
 * execute a screenshot with menu, unconditionally
@@ -360,43 +355,41 @@ static void do_screenshot_action(void)
 static void do_updown_action(uint16_t curpad)
 {
     bool flag = 0;
-    uint8_t *value, step, max, color_comp[4];
+    uint8_t *value, step, max, c_comp[4];   // single color components
     uint32_t *color = NULL;
 
     // setup common bounds for selected ground color(col, line)
     if(col)
-    {   // A, R, G, B: 0x00-0xFF, can loop
-        // bg [0][0-2]   [(col -1)/4][line]
-        // fg [1][0-2]   [(col -1)/4][line]
-        value = &color_comp[(col -1) %4];
+    {   // A, R, G, B: 0x00-0xFF, no bound: can loop
+        value = &c_comp[(col -1) %4];
         step  = -2, max = 0xFF;
         color = &menu_colors[(col -1) /4][line];
 
-        color_comp[0] = GET_A(*color), color_comp[1] = GET_R(*color);
-        color_comp[2] = GET_G(*color), color_comp[3] = GET_B(*color);
+        c_comp[0] = GET_A(*color), c_comp[1] = GET_R(*color),
+        c_comp[2] = GET_G(*color), c_comp[3] = GET_B(*color);
     }
     else
-    {   // line: 0-max_menu[view], bounded: no loop
+    {   // line: 0-max_menu[view], bounded: can't loop
         value = (uint8_t*)&line;
         step  = 1, max = max_menu[view] -1;
     }
 
-    // update value
+    // check for bounds, eventually update value
     if(curpad & PAD_UP)
     {
         if((*value == 0 && col)
-        || *value >  0) { *value -= step, flag = 1; }
+         || *value >  0) { *value -= step, flag = 1; }
     }
     else   // & PAD_DOWN
     {
         if((*value == max && col)
-        || *value <  max) { *value += step, flag = 1; }
+         || *value <  max) { *value += step, flag = 1; }
     }
 
     if(flag)
-    {   // update selected color
-        if(col) *color = ARGB(color_comp[0], color_comp[1],
-                              color_comp[2], color_comp[3]);
+    {   // update selected color with updated single components
+        if(col)
+          *color = ARGB(c_comp[0], c_comp[1], c_comp[2], c_comp[3]);
 
         play_rco_sound("system_plugin", "snd_cursor");
     }
@@ -409,16 +402,18 @@ static void do_updown_action(uint16_t curpad)
 static void do_leftright_action(uint16_t curpad)
 {
   if((view == 2)    // only on third view
-  && (line < 3))    // only for 3 bg_color
+  && (line < 3))    // only for 3 colors, Bg, Fg, Fg2
   {
       bool flag = 0;
       if(curpad & PAD_LEFT)
       {
-          if(col > 0) { col--, flag = 1; }
+          if(col > 0)
+          { col--, flag = 1; }
       }
       else   // & PAD_RIGHT
-      {   //0-argb-argb-argb, 1+4+4+4, 
-          if(col < 4 *3) { col++, flag = 1; }
+      {
+          if(col < 4 *3)          //0-argb-argb-argb, 1+4+4+4
+          { col++, flag = 1; }
       }
 
       if(flag) play_rco_sound("system_plugin", "snd_cursor");
@@ -462,15 +457,19 @@ static void do_menu_action(void)
             do_screenshot_action();
             break;
           case 7:                  // "8: Reset PS3"
-            stop_VSH_Menu();
             delete_turnoff_flag();
-            sys_timer_sleep(1);
+
+            //{system_call_3(379, 0x8201, NULL, 0);}
+            //sys_ppu_thread_exit(0);
+
+            stop_VSH_Menu();
+            //sys_timer_sleep(1);
             shutdown_reset(2);
             break;
           case 8:                  // "9: Shutdown PS3"
-            stop_VSH_Menu();
             delete_turnoff_flag();
-            sys_timer_sleep(1);
+            stop_VSH_Menu();
+            //sys_timer_sleep(1);
             shutdown_reset(1);
             break;
         }
@@ -483,7 +482,6 @@ static void do_menu_action(void)
             view = line = 0;
             break;
           case 1:               // 2: screenshot
-            screenshot(1);
             break;
           case 2:               // 3: Alpha
             //...
@@ -560,56 +558,42 @@ static void vsh_menu_thread(uint64_t arg)
 
     while(1)
     {
-        // if VSH Menu is running, we get pad data over our MyPadGetData()
-        // else, we use the vsh pad_data struct
         if(menu_running)
-            MyPadGetData(0, &pdata);
+            MyPadGetData(0, &pdata);       // get pad data over our MyPadGetData()
         else
-            VSHPadGetData(&pdata);
+            VSHPadGetData(&pdata);         // else use the vsh pad_data struct
 
-        // if pad_data and we are in XMB(vshmain_EB757101() == 0)
         if((pdata.len > 0)
-        && (vshmain_EB757101() == 0)
-        )
+        && (vshmain_EB757101() == 0))      // we are in XMB
         {
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 
             if((curpad != oldpad)
-            && (curpad & PAD_L3))        // Hotkey menu
+            && (curpad & PAD_L3))          // Hotkey menu
             {
                 switch(menu_running)
                 {
                     // VSH Menu not running, start VSH Menu
                     case 0:
-                      // main view and start on first entry 
-                      view = line = col = 0;
+                      view = line = col = 0;        // main view and start on first entry
 
-                      //
                       pause_RSX_rendering();
 
-                      // create VSH Menu heap memory from memory container 1("app")
-                      create_heap(64);       // 64 MB
+                      create_heap(16);              // create VSH Menu heap memory from memory container 1("app")
 
-                      // initialize VSH Menu graphic (init drawing context, alloc buffers, blah, blah, blah...)
-                      init_graphic();
+                      init_graphic();               // initialize VSH Menu graphic
 
                       #ifdef HAVE_SYS_FONT
-                      // set font(char w/h = 20 pxl, line-weight = 1 pxl, distance between chars = 1 pxl)
-                      set_font(FONT_W, FONT_H, 1, FONT_D);
+                      set_font(FONT_W, FONT_H, 1, FONT_D); // line-weight = 1 pxl, distance between chars)
                       #endif
 
+                      load_png_bitmap(0, "/dev_hdd0/tentacle.png"); // load an image
 
-                      // load background image
-                      load_png_bitmap(0, "/dev_hdd0/tentacle.png");
+                      start_stop_vsh_pad(0);                        // stop vsh pad
 
-                      // stop vsh pad
-                      start_stop_vsh_pad(0);
+                      startm = clock(), tick = 0;                   // reset counter
 
-                      // set menu_running
-                      menu_running = 1;
-
-                      // timer start
-                      startm = clock();
+                      menu_running = 1;     // set menu_running
 
                       break;
 
@@ -617,14 +601,13 @@ static void vsh_menu_thread(uint64_t arg)
                     case 1:
                       stop_VSH_Menu();
 
-                      // restart vsh pad
-                      start_stop_vsh_pad(1);
+                      start_stop_vsh_pad(1);    // restart vsh pad
 
                       break;
                 }
 
                 oldpad = 0;
-                sys_timer_usleep(300000);
+                sys_timer_usleep(300 *1000); /* 300msec */
             }
 
 
@@ -654,7 +637,7 @@ static void vsh_menu_thread(uint64_t arg)
 
                 // ...
 
-                sys_timer_usleep(30);
+                // sys_timer_usleep(2 *1000); /* 2msec */
 
             } // end VSH Menu is running
 

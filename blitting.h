@@ -51,8 +51,9 @@
                      ((int32_t)4)))) * ((int32_t)4))) + (BASE))
 
 // compose ARGB color by components
-#define ARGB(a, r, g, b) ((((a) &0xFF) <<24) | (((r) &0xFF) <<16) \
-                        | (((g) &0xFF) << 8) | (((b) &0xFF) << 0))
+#define ARGB(a, r, g, b) ( \
+          (((a) &0xFF) <<24) | (((r) &0xFF) <<16) | \
+          (((g) &0xFF) << 8) | (((b) &0xFF) << 0))
 
 // extract single component form ARGB color
 #define GET_A(color) ((color >>24) &0xFF)
@@ -60,13 +61,6 @@
 #define GET_G(color) ((color >> 8) &0xFF)
 #define GET_B(color) ((color >> 0) &0xFF)
 
-
-// graphic buffers
-typedef struct _Buffer{
-    uint32_t *addr;        // buffer address
-    uint16_t  w;           // buffer width
-    uint16_t  h;           // buffer height
-} Buffer;
 
 #ifdef HAVE_SYS_FONT
 
@@ -90,7 +84,26 @@ typedef struct _Bitmap {
     int32_t max;                                  // max glyph into this cache
     Glyph glyph[FONT_CACHE_MAX];                  // glyph struct
 } Bitmap;
+
+void font_finalize(void);
+void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
+
+#elif HAVE_XBM_FONT
+
+#define LINEAR_GRADIENT_STEP      (FONT_H /2)     // steps we split delta
+void update_gradient(const uint32_t *a, const uint32_t *b);
+
 #endif
+
+
+
+// graphic buffers
+typedef struct _Buffer{
+    uint32_t *addr;        // buffer address
+    uint16_t  w;           // buffer width
+    uint16_t  h;           // buffer height
+} Buffer
+__attribute__((aligned(8)));
 
 // drawing context
 typedef struct _DrawCtx{
@@ -103,37 +116,38 @@ typedef struct _DrawCtx{
     uint32_t *font_cache;  // addr of glyph bitmap cache buffer
     CellFont font;
     CellFontRenderer renderer;
+
     #elif HAVE_PNG_FONT
     uint32_t *font;        // addr of decoded png font
+
+    #elif HAVE_XBM_FONT
+    uint32_t fading_color[LINEAR_GRADIENT_STEP];    // precomputed gradient
     #endif
 
     Buffer   png[PNG_MAX]; // bitmaps
-} DrawCtx;
+} DrawCtx
+__attribute__((aligned(16)));
 
-
-void pause_RSX_rendering(void);
-
-#ifdef HAVE_SYS_FONT
-void font_finalize(void);
-void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
-#endif
 
 void init_graphic(void);
-int32_t load_png_bitmap(int32_t idx, const char *path);
 void flip_frame(void);
+void pause_RSX_rendering(void);
+
 void set_background_color(uint32_t color);
 void set_foreground_color(uint32_t color);
 void draw_background(void);
-void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, int32_t w, int32_t h);
+
+int32_t load_png_bitmap(const int32_t idx, const char *path);
+void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
+
+void screenshot(const uint8_t mode);
 
 // text
 #define LEFT      0   // useless
 #define RIGHT     1
 #define CENTER    2
 uint16_t get_aligned_x(const char *str, const uint8_t alignment);
-void print_text(const int32_t x, const int32_t y, const char *str);
-
-void screenshot(uint8_t mode);
+void print_text(int32_t x, int32_t y, const char *str);
 
 // primitives
 //void draw_pixel(int32_t x, int32_t y);

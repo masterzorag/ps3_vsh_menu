@@ -7,7 +7,7 @@
 
 
 // graphic buffers and drawing context
-static DrawCtx ctx;                                 // drawing context
+static DrawCtx ctx __attribute__((aligned(16)));    // drawing context
 
 // display values
 static uint32_t unk1 = 0, offset = 0, pitch = 0;
@@ -33,17 +33,18 @@ void pause_RSX_rendering()
 * uint32_t bg = background color
 * uint32_t fg = foreground color
 ***********************************************************************/
-static uint32_t mix_color(const uint32_t bg, uint32_t fg)
+static uint32_t mix_color(const uint32_t bg, const uint32_t fg)
 {
     uint32_t a = fg >>24;
     if(a == 0) return bg;
 
     uint32_t rb = (((fg & 0x00FF00FF) * a) + ((bg & 0x00FF00FF) * (255 - a))) & 0xFF00FF00;
     uint32_t g  = (((fg & 0x0000FF00) * a) + ((bg & 0x0000FF00) * (255 - a))) & 0x00FF0000;
-    fg = a + ((bg >>24) * (255 - a) / 255);
+    uint32_t Fg = a + ((bg >>24) * (255 - a) / 255);
 
-    return (fg <<24) | ((rb | g) >>8);
+    return (Fg <<24) | ((rb | g) >>8);
 }
+
 
 /***********************************************************************
 * dump background
@@ -173,8 +174,8 @@ static void render_glyph(int32_t idx, uint32_t code)
     FontSetupRenderScalePixel(&ctx.font, bitmap->font_w, bitmap->font_h);
     FontSetupRenderEffectWeight(&ctx.font, bitmap->weight);
 
-    x = ((int32_t)bitmap->font_w) * 2, w = x *2;
-    y = ((int32_t)bitmap->font_h) * 2, h = y *2;
+    x = ((int32_t)bitmap->font_w) *2, w = x *2;
+    y = ((int32_t)bitmap->font_h) *2, h = y *2;
 
     // set surface
     FontRenderSurfaceInit(&surface, NULL, w, 1, w, h);
@@ -421,7 +422,7 @@ void init_graphic()
     dump_bg();
 
     // init first frame with background dump
-    memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
+    memcpy((uint32_t*)ctx.canvas, (uint32_t*)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 
@@ -438,7 +439,7 @@ void flip_frame()
             *(uint64_t*)(OFFSET(canvas_x + (k*2), canvas_y + (i))) = canvas[k + i * CANVAS_W /2];
 
     // after flip, clear frame buffer with background
-    memcpy((uint8_t *)ctx.canvas, (uint8_t *)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
+    memcpy((uint32_t*)ctx.canvas, (uint32_t*)ctx.bg, CANVAS_W * CANVAS_H * sizeof(uint32_t));
 }
 
 
@@ -475,8 +476,7 @@ void draw_background()
         tmp_x++;
         if(tmp_x == CANVAS_W)
         {
-            tmp_x = 0;
-            tmp_y++;
+            tmp_x = 0, tmp_y++;
         }
     }
 }
@@ -516,6 +516,7 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 
 
 #ifdef HAVE_PNG_FONT
+
 /***********************************************************************
 * print text, with data from font.png
 *
@@ -565,8 +566,7 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tmp_x++;
                 if(tmp_x == char_w)
                 {
-                    tmp_x = 0;
-                    tmp_y++;
+                    tmp_x = 0, tmp_y++;
                 }
             }
             tmp_y = 0;
@@ -577,6 +577,53 @@ void print_text(int32_t x, int32_t y, const char *str)
 }
 
 #elif HAVE_XBM_FONT
+
+/***********************************************************************
+* linear gradient (ARGB)
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+* uint8_t steps   = number of chunk we split fading
+* uint8_t step    = which step we compute and return
+***********************************************************************/
+static uint32_t linear_gradient(const uint32_t *a, const uint32_t *b, const uint8_t steps, const uint8_t step)
+{
+    uint8_t fr[4], to[4];
+    float_t st[4];
+
+    fr[0] = GET_A(*a), fr[1] = GET_R(*a), fr[2] = GET_G(*a), fr[3] = GET_B(*a),
+    to[0] = GET_A(*b), to[1] = GET_R(*b), to[2] = GET_G(*b), to[3] = GET_B(*b);
+
+    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
+    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
+    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
+    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
+
+    return ARGB((int)fr[0] + (int)(st[0] * step),
+                (int)fr[1] + (int)(st[1] * step),
+                (int)fr[2] + (int)(st[2] * step),
+                (int)fr[3] + (int)(st[3] * step));
+}
+
+/***********************************************************************
+* update_gradient
+*
+* precompute palette to use in print_text() and setup colors range
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+***********************************************************************/
+void update_gradient(const uint32_t *a, const uint32_t *b)
+{
+    for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
+    {
+        if(*a != *b)
+            ctx.fading_color[i] = linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
+        else
+            ctx.fading_color[i] = *a;
+    }
+}
+
 #include "xbm_font.h"
 
 /***********************************************************************
@@ -586,63 +633,51 @@ void print_text(int32_t x, int32_t y, const char *str)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(const int32_t x, const int32_t y, const char *str)
+void print_text(int32_t x, int32_t y, const char *str)
 {
-    uint8_t c, i, j, tx = 0, ty = 0;
-    uint32_t tc = ctx.fg_color;
+    uint8_t *c, i, j, tx = 0, ty = 0;
+    uint32_t *px = NULL;
 
     while(*str != '\0')
     {
-        // address the font bitmap
-        c = *str;
-        if(c < LOWER_ASCII_CODE || c > UPPER_ASCII_CODE) c = 180;
+        c = (uint8_t*)str++;          // address the current char
 
-        char *bit = xbmFont[c - LOWER_ASCII_CODE];
+        if(*c < LOWER_ASCII_CODE
+        || *c > UPPER_ASCII_CODE)
+        {  x += FONT_W; continue; }   // skipped, move one char in canvas
 
-        // reset color (for each glyph) to get vertical gradient
-        tc = ctx.fg_color;
+        char *bit = xbmFont[*c - LOWER_ASCII_CODE];
 
         // dump bits map (bytes_per_line 2, size 32 char of 8 bit)
         for(i = 0; i < ((FONT_W * FONT_H) / BITS_IN_BYTE); i++)
         {
             for(j = 0; j < BITS_IN_BYTE; j++)
             {
-                // least significant bit first
-                if(bit[i] & (1 << j))
+                if(bit[i] & (1 << j))     // least significant bit first
                 {
-                    // draw a shadow, displaced by + SHADOW_PX
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j + SHADOW_PX) + (y + ty + SHADOW_PX) * CANVAS_W] = 0xFF303030;
+                    px = &ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W];
 
-                    // paint FG pixel
-                    ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = tc;
-                }
-                else
-                {
-                    // paint BG pixel (or do nothing for trasparency)
-                    //ctx.canvas[(x + tx * BITS_IN_BYTE + j) + (y + ty) * CANVAS_W] = ctx.bg_color;
+                    // paint FG pixel with precomputed fading colors
+                    *px = ctx.fading_color[ty /2];
+
+                    // displace shadow by (+SHADOW_PX, +SHADOW_PX)
+                    px += (SHADOW_PX * CANVAS_W + SHADOW_PX);
+
+                    // paint the shadow
+                    *px = mix_color(*px, ctx.bg_color & 0x66000000);
                 }
             }
 
             tx++;
             if(tx == (FONT_W / BITS_IN_BYTE))
-            {
-                tx = 0, ty++;        // use to decrease gradient
-
-                // vertical gradient
-                tc -= ty * 580;
-
-                // horizontal gradient
-                //tc -= ty * 15;
-            }
+                tx = 0, ty++;        // step to decrease gradient
         }
-        ty = 0;
-
         // glyph painted, move one char right in text
-        x += FONT_W;
-        ++str;
+        x += FONT_W, ty = 0;        //++str;
     }
 }
-#endif
+
+#endif // HAVE_XBM_FONT
 
 
 /***********************************************************************
@@ -651,7 +686,7 @@ void print_text(const int32_t x, const int32_t y, const char *str)
 * int32_t idx      = index of png, max 4 (0 - 3)
 * const char *path = path to png file
 ***********************************************************************/
-int32_t load_png_bitmap(int32_t idx, const char *path)
+int32_t load_png_bitmap(const int32_t idx, const char *path)
 {
     if(idx > PNG_MAX) return -1;
     ctx.png[idx] = load_png(path);
@@ -670,16 +705,21 @@ int32_t load_png_bitmap(int32_t idx, const char *path)
 * int32_t w        =  width of png part to blit
 * int32_t h        =  height of png part to blit
 ***********************************************************************/
-void draw_png(int32_t idx, int32_t c_x, int32_t c_y, int32_t p_x, int32_t p_y, int32_t w, int32_t h)
+void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
 {
     int32_t i, k;
+    uint32_t *px = NULL;
 
     for(i = 0; i < h; i++)
         for(k = 0; k < w; k++)
-            if((c_x + k < CANVAS_W) && (c_y + i < CANVAS_H))
-                ctx.canvas[(c_y + i) * CANVAS_W + c_x + k] =
-                    mix_color(ctx.canvas[(c_y + i) * CANVAS_W + c_x + k],
-                        ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
+            if((c_x + k < CANVAS_W) 
+            && (c_y + i < CANVAS_H))
+            {
+                px = &ctx.canvas[(c_y + i) * CANVAS_W + c_x + k];
+
+                *px = mix_color(*px,
+                                ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
+            }
 }
 
 
@@ -695,7 +735,7 @@ uint8_t bmp_header[] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-void screenshot(uint8_t mode)
+void screenshot(const uint8_t mode)
 {
     FILE *fd = NULL;
     uint32_t tmp = 0;

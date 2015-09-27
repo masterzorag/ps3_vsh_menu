@@ -257,7 +257,7 @@ static void draw_frame(CellPadData *data)
                 update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
                 #endif
 
-                sprintf(tmp_ln, "%.8x", *tc);
+                sprintf(tmp_ln, "%.8x", *tc);        // print color
                 print_text(tx, ty, tmp_ln);
 
                 if(i == line                         // selected entry
@@ -267,13 +267,28 @@ static void draw_frame(CellPadData *data)
                     tc = &blink_color;               // blink
                     set_foreground_color(*tc);
                     #ifdef HAVE_XBM_FONT
-                    update_gradient(tc, &menu_colors[2][i]);        // do same color?
+                    update_gradient(tc, &menu_colors[2][i]);    // do same color?
                     #endif
 
-                    // put a terminator and print one of AA:RR:GG:BB
-                    x = ((col -1) %4) *2 /*chars*/;
+                    // put a terminator and print one of AA:RR:GG:BB\0
+                    x = ((col -1) %4) *2 /*chars*/;  // [0, 2, 4, 6, 8]
+                    uint16_t add_x = 0;
+
+                    if(x) // 2, 4, 6
+                    {
+                        #ifdef HAVE_SYS_FONT
+                        tmp_ln[x] = '\0';
+                        add_x = get_render_length(tmp_ln);
+                        sprintf(tmp_ln, "%.8x", menu_colors[g][i]); // need to restore
+
+                        #elif HAVE_XBM_FONT
+                        add_x = (x * FONT_W);        // xbm_font is monospace
+                        #endif
+                    }
+
+                    // print current selected color component
                     tmp_ln[x +2] = '\0';
-                    print_text(tx + (x * FONT_W), ty, &tmp_ln[x]);
+                    print_text(tx + add_x, ty, &tmp_ln[x]);
                 }
             }
         }

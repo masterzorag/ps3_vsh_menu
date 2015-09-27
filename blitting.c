@@ -326,6 +326,34 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
     return len;
 }
 
+
+/***********************************************************************
+* get render lenght of text, in pixel
+*
+* const char *str = string to measure
+***********************************************************************/
+uint16_t get_render_length(const char *str)
+{
+    uint32_t code = 0;                 // char unicode
+    uint8_t *utf8 = (uint8_t*)str;
+    int32_t len = 0;
+    Glyph *glyph;                      // char glyph
+    memset(&glyph, 0, sizeof(Glyph));
+
+    while(1)    // get render length
+    {
+        utf8 += utf8_to_ucs4(utf8, &code);
+
+        if(code == 0) break;
+
+        glyph = get_glyph(code);
+        len += glyph->metrics.Horizontal.advance + bitmap->distance;
+    }
+
+    return (uint16_t)(len - bitmap->distance);
+}
+
+
 /***********************************************************************
 * print text, from prerendered TTF
 * 
@@ -345,7 +373,7 @@ void print_text(int32_t x, int32_t y, const char *str)
     memset(&glyph, 0, sizeof(Glyph));
 
     // render text
-    while(1)
+    while(*str != '\0')
     {
         utf8 += utf8_to_ucs4(utf8, &code);
 
@@ -486,32 +514,20 @@ void draw_background()
 * compute x to align text into canvas
 *
 * const char *str = referring string
-* uint8_t align   = RIGHT / CENTER (1/2)
+* uint8_t align.  = RIGHT / CENTER (1/2)
 ***********************************************************************/
 uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 {
+    uint16_t len; // lenght in pixel
+
     #ifdef HAVE_SYS_FONT
-    uint32_t code = 0;                 // char unicode
-    uint8_t *utf8 = (uint8_t*)str;
-    int32_t len = 0;
-    Glyph *glyph;                      // char glyph
-    memset(&glyph, 0, sizeof(Glyph));
+    len = get_render_length(str);
 
-    // get render length
-    while(1)
-    {
-        utf8 += utf8_to_ucs4(utf8, &code);
-
-        if(code == 0) break;
-
-        glyph = get_glyph(code);
-        len += glyph->metrics.Horizontal.advance + bitmap->distance;
-    }
-
-    return (uint16_t)((CANVAS_W - len - bitmap->distance) / alignment);
     #else
-    return (uint16_t)((CANVAS_W - (strlen(str) * FONT_W)) / alignment);
+    len = (strlen(str) * FONT_W); // monospaced font
+
     #endif
+    return (uint16_t)((CANVAS_W - len) / alignment);    
 }
 
 

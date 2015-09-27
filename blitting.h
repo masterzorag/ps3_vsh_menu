@@ -32,6 +32,7 @@
 // common
 #define FONT_D         1                   // distance to next char
 #define BORD_D         4                   // distance from canvas border
+
 // additional png bitmaps
 #define PNG_MAX        4
 
@@ -87,6 +88,7 @@ typedef struct _Bitmap {
 
 void font_finalize(void);
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
+uint16_t get_render_length(const char *str);
 
 #elif HAVE_XBM_FONT
 

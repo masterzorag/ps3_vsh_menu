@@ -24,14 +24,15 @@
 #define FONT_H         22                  // font height in pixel
 
 #elif HAVE_XBM_FONT
-#define FONT_W         16                  // use hardcoded xbm_font
-#define FONT_H         16
-#define SHADOW_PX      2                   // lower-right text shadow in pixel
+#define FONT_W          16                   // use hardcoded xbm_font
+#define FONT_H          16
+
 #endif
 
 // common
-#define FONT_D         1                   // distance to next char
-#define BORD_D         4                   // distance from canvas border
+#define SHADOW_PX       2                    // lower-right text shadow in pixel
+#define FONT_D          1                    // distance to next char
+#define BORD_D          4                    // distance from canvas border
 
 // additional png bitmaps
 #define PNG_MAX        4
@@ -98,7 +99,6 @@ void update_gradient(const uint32_t *a, const uint32_t *b);
 #endif
 
 
-
 // graphic buffers
 typedef struct _Buffer{
     uint32_t *addr;        // buffer address
@@ -123,9 +123,9 @@ typedef struct _DrawCtx{
     uint32_t *font;        // addr of decoded png font
 
     #elif HAVE_XBM_FONT
-    uint32_t fading_color[LINEAR_GRADIENT_STEP];    // precomputed gradient
-    #endif
+    uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient
 
+    #endif
     Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx
 __attribute__((aligned(16)));

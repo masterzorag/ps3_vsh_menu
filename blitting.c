@@ -369,6 +369,7 @@ void print_text(int32_t x, int32_t y, const char *str)
     int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
     Glyph *glyph;                                                   // char glyph
     uint8_t *utf8 = (uint8_t*)str;
+    uint32_t *px = NULL;
 
     memset(&glyph, 0, sizeof(Glyph));
 
@@ -402,10 +403,20 @@ void print_text(int32_t x, int32_t y, const char *str)
                     if((glyph->image[i * glyph->w + k])
                     && (t_x + k < CANVAS_W)
                     && (t_y + i < CANVAS_H))
-                        ctx.canvas[(t_y + i) * CANVAS_W + t_x + k] =
-                            mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
-                                 ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
-                                 (ctx.fg_color & 0x00FFFFFF));
+                    {
+                        px = &ctx.canvas[(t_y + i) * CANVAS_W + t_x + k];
+
+                        // paint FG pixel
+                        *px = mix_color(*px,
+                                       ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
+                                        (ctx.fg_color & 0x00FFFFFF));
+
+                        // displace shadow by (+SHADOW_PX, +SHADOW_PX)
+                        px += (SHADOW_PX * CANVAS_W + SHADOW_PX);
+
+                        // paint the shadow
+                        *px = mix_color(*px, ctx.bg_color & 0x66000000);
+                    }
 
             // get origin-x for next char
             o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
@@ -431,11 +442,12 @@ void init_graphic()
     #ifdef HAVE_SYS_FONT
     ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
     font_init();
+
     #elif HAVE_PNG_FONT
     Buffer font = load_png(PNG_FONT_PATH);  // load font png
     ctx.font    = font.addr;
-    #endif
 
+    #endif
     // get current display values
     offset = *(uint32_t*)0x60201104;    // start offset of current framebuffer
     getDisplayPitch(&pitch, &unk1);     // framebuffer pitch size
@@ -518,7 +530,7 @@ void draw_background()
 ***********************************************************************/
 uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 {
-    uint16_t len; // lenght in pixel
+    uint16_t len; // str lenght, in pixels!
 
     #ifdef HAVE_SYS_FONT
     len = get_render_length(str);
@@ -527,7 +539,7 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
     len = (strlen(str) * FONT_W); // monospaced font
 
     #endif
-    return (uint16_t)((CANVAS_W - len) / alignment);    
+    return (uint16_t)((CANVAS_W - len) / alignment);
 }
 
 
@@ -689,7 +701,7 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tx = 0, ty++;        // step to decrease gradient
         }
         // glyph painted, move one char right in text
-        x += FONT_W, ty = 0;        //++str;
+        x += FONT_W, ty = 0;
     }
 }
 

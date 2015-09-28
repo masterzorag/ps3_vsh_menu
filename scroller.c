@@ -5,14 +5,15 @@
 // testing f_sinf() export
 // masterzorag, 2015
 
-#define STEP_X  -4            // horizontal displacement
-#define S_LEN   64 *4         // we save 2 strlen(), also it's 256!
+#define STEP_X   -4           // horizontal displacement
+#define MSG_LEN  64 *4        // we save 2 strlen(), also it's 256!
 
 
-static int32_t sx = CANVAS_W;
+static int32_t  sx  = CANVAS_W;
+static uint16_t len = 0;
 
 /* 256 characters, 64 * 4 lines or switch from uint8_t i below */
-static const char ss[S_LEN] __attribute__((aligned(16))) = "\
+static const char msg[MSG_LEN] __attribute__((aligned(16))) = "\
     Hi Folks, now we have a Sinusscroller greeter too !!! also: \
 shadowed, color text         * * *          Greets goes to: play\
 stationhax.it, psx-place.com and all the ps3 devs around !      \
@@ -30,7 +31,7 @@ void draw_text(const int y)
     char   c[2];
     c[1] = '\0';              // print_text() deals with '\0' terminated
 
-    for(i = 0; i < S_LEN -1; i++)
+    for(i = 0; i < MSG_LEN -1; i++)
     {
         if(x > 0 && x < CANVAS_W - FONT_W)
         {
@@ -38,11 +39,17 @@ void draw_text(const int y)
               * 0.02)         // it turns out in num of bends
               * 20;           // +/- vertical bounds over y
 
-            c[0] = ss[i];     // split text into single characters
+            c[0] = msg[i];    // split text into single characters
 
             print_text(x, y + amp, c);
         }
+        #ifdef HAVE_SYS_FONT
+        x += get_render_length(c);
+
+        #else
         x += FONT_W;
+        
+        #endif
     }
 }
 
@@ -52,8 +59,19 @@ void draw_text(const int y)
 ***********************************************************************/
 void move_text(void)
 {
+    if(!len)
+    {
+        #ifdef HAVE_SYS_FONT
+        len = get_render_length(msg);
+
+        #else
+        len = MSG_LEN * FONT_W;
+        
+        #endif
+    }
+    
     sx += STEP_X;
 
-    if(sx < -(uint16_t)(S_LEN * FONT_W))  // horizontal bound, then loop
+    if(sx < -(uint16_t)len)   // horizontal bound, then loop
         sx = CANVAS_W + FONT_W;
 }

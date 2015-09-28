@@ -336,7 +336,7 @@ uint16_t get_render_length(const char *str)
 {
     uint32_t code = 0;                 // char unicode
     uint8_t *utf8 = (uint8_t*)str;
-    int32_t len = 0;
+    uint16_t len  = 0;
     Glyph *glyph;                      // char glyph
     memset(&glyph, 0, sizeof(Glyph));
 

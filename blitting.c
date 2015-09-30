@@ -645,17 +645,14 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 {
     for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
     {
-        if(*a != *b)
-            ctx.fading_color[i] = linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
-        else
-            ctx.fading_color[i] = *a;
+        ctx.fading_color[i] = (*a == *b) ? *a : linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
     }
 }
 
 #include "xbm_font.h"
 
 /***********************************************************************
-* print text, with data from xbm_font.h
+* print text, with bitmap data from xbm_font.h
 *
 * int32_t x       = start x coordinate into canvas
 * int32_t y       = start y coordinate into canvas

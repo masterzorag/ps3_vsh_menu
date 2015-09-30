@@ -99,7 +99,7 @@ static uint32_t menu_colors[4][3] __attribute__((aligned(16))) = {
     0xFFA0A0A0,     // black, opac
     0xFFFFFFFF      // white, opac
 },
-{   // Fg_2_colors[2] to use better gradient color, foreach view
+{   // Fg_2_colors[2] to use linear gradient color, foreach view
     0xFF600090,
     0xFF6060A0,
     0xFF303030
@@ -182,13 +182,13 @@ static void draw_frame(CellPadData *data)
             tc = &blink_color;
             set_foreground_color(*tc);
             #ifdef HAVE_XBM_FONT
-            update_gradient(tc, &menu_colors[2][view]);   // do same color
+            update_gradient(tc, tc);    // full color
             #endif
         }
 
         print_text(BORD_D, ty, entry_str[view][i]);
 
-        // (re)set back if just draw selectd line
+        // (re)set back if just draw selected line
         if(tc)
         {
             set_foreground_color(menu_colors[1][view]);
@@ -267,7 +267,7 @@ static void draw_frame(CellPadData *data)
                     tc = &blink_color;               // blink
                     set_foreground_color(*tc);
                     #ifdef HAVE_XBM_FONT
-                    update_gradient(tc, &menu_colors[2][i]);        // do same color?
+                    update_gradient(tc, tc);         // full color
                     #endif
 
                     // put a terminator and print one of AA:RR:GG:BB

@@ -232,7 +232,7 @@ static void draw_frame(CellPadData *data)
         tx = 0, ty = 200;
         for(i = 0; i < 32; i++)
         {
-            sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
+            sprintf(&tmp_ln[x], "%.4X:", data->button[i]);
             x += 5;
             tmp_ln[x] = '\0';
 
@@ -268,7 +268,7 @@ static void draw_frame(CellPadData *data)
                 update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
                 #endif
 
-                sprintf(tmp_ln, "%.8x", *tc);
+                sprintf(tmp_ln, "%.8X", *tc);
                 print_text(tx, ty, tmp_ln);
 
                 if(i == line                         // selected entry

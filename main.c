@@ -119,15 +119,15 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
 {
     "1: Make a single beep",
     "2: Make a double beep",
-    "3: Enter second menu view",
-    "4: Setup colors menu view",
+    "3: Dump pad data",
+    "4: Setup colors menu",
     "5: Play trophy sound",
     "6: Make screenshot",
     "7: Make screenshot with Menu",
     "8: Reset PS3",
     "9: Shutdown PS3"
 },
-{   // dump pad data menu
+{   // Dump pad data
     "1: test",
     "2: screenshot",
     "3: Alpha",
@@ -136,7 +136,7 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "6: Blue",
     "7: test"
 },
-{   // setup color menu
+{   // Setup colors menu
     "1:bg,fg,f2",
     "2:bg,fg,f2",
     "3:bg,fg,f2",
@@ -200,11 +200,22 @@ static void draw_frame(CellPadData *data)
     // we pass with default colors setted, per view
 
     // print headline string, coordinates in canvas
-    print_text(BORD_D, BORD_D, "PS3 VSH Menu");
+    switch(view)
+    {
+      case 1:
+      case 2:
+        strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3));  // strip leading number
+        break;
+
+      default:
+        strcpy(tmp_ln, "PS3 VSH Menu");
+        break;
+    }
+    print_text(BORD_D, BORD_D, tmp_ln);  // from upper-left, minimum border
 
     // ...
 
-    // second menu, realtime pad data dump:
+    // second view: Dump pad data
     if(view == 1)
     {   // used in text position
         uint16_t ty = 180;
@@ -237,7 +248,7 @@ static void draw_frame(CellPadData *data)
         }
 
     }
-    else if(view == 2)   // only on third view
+    else if(view == 2)  // third view: Setup colors menu
     {
         uint32_t *tc = NULL;
         uint8_t x, g;  // grounds

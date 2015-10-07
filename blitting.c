@@ -75,8 +75,8 @@ int32_t LINE_HEIGHT = 0;
 static int32_t get_font_object(void)
 {
     uint8_t i;
-    uint32_t pm_start = 0x10000UL;
-    uint64_t pat[2]   = {0x3800001090810080ULL, 0x90A100849161008CULL};
+    int32_t pm_start = 0x10000UL;
+    uint64_t pat[2]  = {0x3800001090810080ULL, 0x90A100849161008CULL};
 
     while(pm_start < 0x700000UL)
     {
@@ -84,12 +84,12 @@ static int32_t get_font_object(void)
         && (*(uint64_t*)(pm_start +8) == pat[1]))
         {
             // get font object
-            font_obj = (uint32_t)(
-                (int32_t)((*(uint32_t*)(pm_start +0x4C) & 0x0000FFFF) <<16) +
-                (int16_t)( *(uint32_t*)(pm_start +0x54) & 0x0000FFFF));
+            font_obj = (int32_t)(
+                (int32_t)((*(int32_t*)(pm_start +0x4C) & 0x0000FFFF) <<16) +
+                (int16_t)( *(int32_t*)(pm_start +0x54) & 0x0000FFFF));
 
             // get font library pointer
-            font_lib_ptr = *(uint32_t*)font_obj;
+            font_lib_ptr = (void*)(*(int32_t*)font_obj);
 
             // get addresses of loaded sys fonts 
             for(i = 0; i < 16; i++)
@@ -109,7 +109,7 @@ static int32_t get_font_object(void)
 ***********************************************************************/
 static void font_init(void)
 {
-    int32_t user_id = 0, val = 0;
+    uint32_t user_id = 0, val = 0;
     CellFontRendererConfig rd_cfg;
     CellFont *opened_font = NULL;
 
@@ -119,7 +119,7 @@ static void font_init(void)
     user_id = xsetting_CC56EB2D()->GetCurrentUserNumber();
 
     // get current font style for the current logged in user
-    xsetting_CC56EB2D()->DoUnk16_GetRegistryValue(user_id, 0x5C, &val);
+    xsetting_CC56EB2D()->GetRegistryValue(user_id, 0x5C, &val);
 
     // get sysfont
     switch(val)

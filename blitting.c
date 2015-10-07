@@ -333,7 +333,7 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     int32_t i, k;
     uint32_t code = 0;                                              // char unicode
@@ -383,6 +383,8 @@ void print_text(int32_t x, int32_t y, const char *str)
             o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
         }
     }
+
+    return o_x;
 }
 
 #endif // HAVE_SYS_FONT
@@ -524,7 +526,7 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     int32_t c_x = x, c_y = y;
     int32_t i = 0, char_w = 0, p_x = 0, p_y = 0;
@@ -574,6 +576,8 @@ void print_text(int32_t x, int32_t y, const char *str)
         }
         str++;
     }
+
+    return c_x;
 }
 
 #elif HAVE_XBM_FONT
@@ -633,7 +637,7 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     uint8_t *c, i, j, tx = 0, ty = 0;
     uint32_t *px = NULL;
@@ -644,7 +648,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 
         if(*c < LOWER_ASCII_CODE
         || *c > UPPER_ASCII_CODE)
-        {  x += FONT_W; continue; }   // skipped, move one char in canvas
+        { x += FONT_W; continue; }    // skipped, move one char in canvas
 
         char *bit = xbmFont[*c - LOWER_ASCII_CODE];
 
@@ -673,8 +677,10 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tx = 0, ty++;        // step to decrease gradient
         }
         // glyph painted, move one char right in text
-        x += FONT_W, ty = 0;        //++str;
+        x += FONT_W, ty = 0;
     }
+
+    return x;
 }
 
 #endif // HAVE_XBM_FONT
@@ -705,7 +711,7 @@ int32_t load_png_bitmap(const int32_t idx, const char *path)
 * int32_t w        =  width of png part to blit
 * int32_t h        =  height of png part to blit
 ***********************************************************************/
-void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
+int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
 {
     int32_t i, k;
     uint32_t *px = NULL;
@@ -720,6 +726,8 @@ void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int
                 *px = mix_color(*px,
                                 ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
             }
+
+    return (c_x + w);
 }
 
 

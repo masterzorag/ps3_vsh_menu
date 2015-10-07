@@ -418,7 +418,8 @@ extern int sysPrxForUser_E0DA8EFD(sys_spu_image_t *img);                  // sys
 extern void sysPrxForUser_E6F2C1E7(int status);                           // sys_process_exit()
 #define sys_process_exit sysPrxForUser_E6F2C1E7
 
-// sysPrxForUser_E75C40F2;  // ?
+extern int32_t sysPrxForUser_E75C40F2(void *x);  // ?
+
 // sysPrxForUser_E76964F5  // sys_game_board_storage_read
 // sysPrxForUser_E7EF3A80  // sys_prx_load_module_list_on_memcontainer
 // sysPrxForUser_E95FFA0A  // ret 0x80010003
@@ -469,9 +470,10 @@ extern int sysPrxForUser_FB5DB080(const void *ptr1,                       // sys
 
 // sysPrxForUser_FC52A7A9  // sys_game_process_exitspawn
 
-extern uint64_t sysPrxForUser_FECC05B6(void);  // SYS_TIMEBASE_GET
+extern void sysPrxForUser_FECC05B6(uint64_t);  // SYS_TIMEBASE_GET
 #define SYS_TIMEBASE_GET sysPrxForUser_FECC05B6
 
 // sysPrxForUser_FF34C76C  // sys_rsxaudio_ (1 param)
+
 
 #endif // __SYS_PRX_FOR_USER_H__ 

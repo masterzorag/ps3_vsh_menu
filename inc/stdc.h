@@ -22,12 +22,6 @@ extern uint64_t stdc_FEFBE065;  // _Stderr
 
 
 
-
-
-
-
-
-
 extern float stdc_00FDE072(float x, float y);                                         // f_powf()
 #define f_powf stdc_00FDE072
 
@@ -104,8 +98,8 @@ extern double stdc_31DB8C89(double y, double x);                                
 extern int stdc_33D6AE54(FILE *stream);                                               // ferror()
 #define ferror stdc_33D6AE54
 
-// stdc_36C067C1  // _Stoll
-//uint64_t _Stoll(const char *, char **, int);
+extern uint64_t stdc_36C067C1(const char *a, char **b, int x);                        // _Stoll
+#define _Stoll stdc_36C067C1
 
 extern double stdc_38E69F09(double x, double y);                                      // pow()
 #define pow stdc_38E69F09
@@ -286,9 +280,8 @@ extern wchar_t *stdc_84378DDC(wchar_t *dest, const wchar_t *src, size_t num);   
 extern double stdc_8451EDF0(double x);                                                // sqrtf()
 #define sqrtf stdc_8451EDF0
 
-// stdc_867275D7  // _Stoul()
-// unsigned long _Stoul(const char *, char **, int);
-// stdc_88214E8A  // ?
+extern unsigned long stdc_867275D7(const char *a, char **b, int x);                   // _Stoul()
+#define _Stoul stdc_867275D7
 
 extern float stdc_895CDB49(float x, float y);                                         // fmaxf()
 #define fmaxf stdc_895CDB49
@@ -452,8 +445,8 @@ extern void *stdc_CBAC7AD7(void *ptr, int value, size_t num);                   
 extern long int stdc_D14ECE90(const char *str, char **endptr, int base);              // strtol()
 #define strtol stdc_D14ECE90
 
-// stdc_D1D69CB8  // _Stod()
-// double _Stod(const char *, char **, long);
+extern double stdc_D1D69CB8(const char *a, char **b, long x);                         // _Stod()
+#define _Stod stdc_D1D69CB8
 
 extern int stdc_D360DCB4(FILE *stream);                                               // fileno()
 #define fileno stdc_D360DCB4
@@ -461,8 +454,8 @@ extern int stdc_D360DCB4(FILE *stream);                                         
 extern size_t stdc_D40723D6(void *ptr, size_t size, size_t count, FILE *stream);      // fread()
 #define fread stdc_D40723D6
 
-// stdc_D417EEB5  // _Stoull()
-// uint64_t _Stoull(const char *, char **, int);
+extern uint64_t stdc_D417EEB5(const char *a, char **b, int x);                        // _Stoull()
+#define _Stoull stdc_D417EEB5
 
 extern double stdc_D50277AD(double x);                                                // tan()
 #define tan stdc_D50277AD
@@ -565,5 +558,6 @@ extern float stdc_FCF08193(float x);                                            
 
 extern int stdc_FE88E97E(FILE *stream, const char *fmt, ...);                         // fscanf()
 #define fscanf stdc_FE88E97E
+
 
 #endif // __STDC_H__ 

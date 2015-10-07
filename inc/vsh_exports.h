@@ -8,6 +8,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <sys/socket.h>
+#include <sys/poll.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netex/net.h>
+#include <netex/sockinfo.h>
+#include <netex/udpp2p.h>
+#include <netinet/in.h>
+#include <netex/ns.h>
+#include <netex/ifctl.h>
+#include <sys/time.h>
+#include <sys/select.h>
+
 #include <math.h>
 #include <time.h>
 #include <dirent.h>
@@ -28,19 +42,26 @@
 #include <sys/sys_time.h>
 #include <sys/spu_utility.h>
 #include <sys/spu_image.h>
+#include <cell/pad.h>
 
 #include "stdc.h"
 #include "allocator.h"
+#include "sys_net.h"
 #include "sys_prx_for_user.h"
 #include "vsh.h"
+#include "vshcommon.h"
 #include "vshtask.h"
 #include "vshmain.h"
+#include "vshnet.h"
 #include "paf.h"
 #include "sdk.h"
 #include "pngdec_ppuonly.h"
 #include "esecron.h"
 #include "libcrashdump_system.h"
 #include "sys_io.h"
+#include "mms_db.h"
+#include "netctl_main.h"
+#include "x3.h"
 
 #include "xregistry.h"
 #include "game_plugin.h"

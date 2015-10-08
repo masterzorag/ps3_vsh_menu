@@ -63,7 +63,6 @@ static void dump_bg(void)
 #ifdef HAVE_SYS_FONT
 
 static Bitmap *bitmap = NULL;                       // font glyph cache
-static uint32_t font_obj = 0;                       // vsh font library object address
 static const CellFontLibrary *font_lib_ptr = NULL;  // font library pointer
 static uint32_t vsh_fonts[16] = {};                 // addresses of the 16 system font slots
 
@@ -75,21 +74,22 @@ int32_t LINE_HEIGHT = 0;
 static int32_t get_font_object(void)
 {
     uint8_t i;
-    uint32_t pm_start = 0x10000UL;
-    uint64_t pat[2]   = {0x3800001090810080ULL, 0x90A100849161008CULL};
+    int32_t font_obj = 0;                            // vsh font library object address
+    int32_t pm_start = 0x10000;
+    uint64_t pat[2]  = {0x3800001090810080ULL, 0x90A100849161008CULL};
 
-    while(pm_start < 0x700000UL)
+    while(pm_start < 0x700000)
     {
         if((*(uint64_t*) pm_start     == pat[0])
         && (*(uint64_t*)(pm_start +8) == pat[1]))
         {
             // get font object
-            font_obj = (uint32_t)(
-                (int32_t)((*(uint32_t*)(pm_start +0x4C) & 0x0000FFFF) <<16) +
-                (int16_t)( *(uint32_t*)(pm_start +0x54) & 0x0000FFFF));
+            font_obj = (int32_t)(
+                (int32_t)((*(int32_t*)(pm_start +0x4C) & 0x0000FFFF) <<16) +
+                (int16_t)( *(int32_t*)(pm_start +0x54) & 0x0000FFFF));
 
             // get font library pointer
-            font_lib_ptr = *(uint32_t*)font_obj;
+            font_lib_ptr = (void*)(*(int32_t*)font_obj);
 
             // get addresses of loaded sys fonts 
             for(i = 0; i < 16; i++)
@@ -105,11 +105,37 @@ static int32_t get_font_object(void)
 }
 
 /***********************************************************************
+* set font with default settings
+***********************************************************************/
+static void set_font_default(void)
+{
+    int32_t i;
+    bitmap = mem_alloc(sizeof(Bitmap));
+    memset(bitmap, 0, sizeof(Bitmap));
+
+    // set font
+    FontSetScalePixel(&ctx.font, FONT_W, FONT_H);
+    FontSetEffectWeight(&ctx.font, FONT_WEIGHT);
+
+    FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
+    LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
+
+    bitmap->max    = FONT_CACHE_MAX;
+    bitmap->count  = 0;
+    bitmap->font_w = FONT_W;
+    bitmap->font_h = FONT_H;
+    bitmap->weight = FONT_WEIGHT;
+
+    for(i = 0; i < FONT_CACHE_MAX; i++)
+        bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
+}
+
+/***********************************************************************
 * unbind and destroy renderer, close font instance
 ***********************************************************************/
 static void font_init(void)
 {
-    int32_t user_id = 0, val = 0;
+    uint32_t user_id = 0, val = 0;
     CellFontRendererConfig rd_cfg;
     CellFont *opened_font = NULL;
 
@@ -119,7 +145,7 @@ static void font_init(void)
     user_id = xsetting_CC56EB2D()->GetCurrentUserNumber();
 
     // get current font style for the current logged in user
-    xsetting_CC56EB2D()->DoUnk16_GetRegistryValue(user_id, 0x5C, &val);
+    xsetting_CC56EB2D()->GetRegistryValue(user_id, 0x5C, &val);
 
     // get sysfont
     switch(val)
@@ -144,6 +170,8 @@ static void font_init(void)
     FontCreateRenderer(font_lib_ptr, &rd_cfg, &ctx.renderer);
 
     FontBindRenderer(&ctx.font, &ctx.renderer);
+
+    set_font_default();
 }
 
 /***********************************************************************
@@ -151,9 +179,9 @@ static void font_init(void)
 ***********************************************************************/
 void font_finalize(void)
 {
-  FontUnbindRenderer(&ctx.font);
-  FontDestroyRenderer(&ctx.renderer);
-  FontCloseFont(&ctx.font);
+    FontUnbindRenderer(&ctx.font);
+    FontDestroyRenderer(&ctx.renderer);
+    FontCloseFont(&ctx.font);
 }
 
 /***********************************************************************
@@ -197,7 +225,8 @@ static void render_glyph(int32_t idx, uint32_t code)
     // copy glyph bitmap into cache
     for(k = 0; k < bitmap->glyph[idx].h; k++)
         for(i = 0; i < bitmap->glyph[idx].w; i++)
-            bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] = transinfo.Image[k * ibw + i];
+            bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] = 
+            transinfo.Image[k * ibw + i];
 
     bitmap->glyph[idx].metrics = metrics;
 }
@@ -232,34 +261,33 @@ static Glyph *get_glyph(uint32_t code)
 }
 
 /***********************************************************************
-* set font and create a new bitmap cache
+* set new font values
 * 
 * float_t font_w    =  char width
 * float_t font_h    =  char height
 * float_t weight    =  line weight
 * int32_t distance  =  distance between chars
 ***********************************************************************/
-void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /* unused */)
+void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance)
 {
-    int32_t i;
-    bitmap = mem_alloc(sizeof(Bitmap));
-    memset(bitmap, 0, sizeof(Bitmap));
+    // max size is 32 * 32 pixels
+    if(font_w > 32.f && font_h > 32.f)
+        font_w = font_h = 32.f;
 
     // set font
     FontSetScalePixel(&ctx.font, font_w, font_h);
     FontSetEffectWeight(&ctx.font, weight);
+
+    // get and set new line height
     FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
 
     LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
 
-    bitmap->max    = FONT_CACHE_MAX;
-    bitmap->count  = 0;
-    bitmap->font_w = font_w;
-    bitmap->font_h = font_h;
-    bitmap->weight = weight;
-
-    for(i = 0; i < FONT_CACHE_MAX; i++)
-        bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
+    bitmap->count    = 0;                             // reset font cache
+    bitmap->font_w   = font_w;
+    bitmap->font_h   = font_h;
+    bitmap->weight   = weight;
+    bitmap->distance = distance;
 }
 
 /***********************************************************************
@@ -333,7 +361,7 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     int32_t i, k;
     uint32_t code = 0;                                              // char unicode
@@ -383,6 +411,8 @@ void print_text(int32_t x, int32_t y, const char *str)
             o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
         }
     }
+
+    return o_x;
 }
 
 #endif // HAVE_SYS_FONT
@@ -524,7 +554,7 @@ uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     int32_t c_x = x, c_y = y;
     int32_t i = 0, char_w = 0, p_x = 0, p_y = 0;
@@ -574,6 +604,8 @@ void print_text(int32_t x, int32_t y, const char *str)
         }
         str++;
     }
+
+    return c_x;
 }
 
 #elif HAVE_XBM_FONT
@@ -633,7 +665,7 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 * int32_t y       = start y coordinate into canvas
 * const char *str = string to print
 ***********************************************************************/
-void print_text(int32_t x, int32_t y, const char *str)
+int32_t print_text(int32_t x, int32_t y, const char *str)
 {
     uint8_t *c, i, j, tx = 0, ty = 0;
     uint32_t *px = NULL;
@@ -644,7 +676,7 @@ void print_text(int32_t x, int32_t y, const char *str)
 
         if(*c < LOWER_ASCII_CODE
         || *c > UPPER_ASCII_CODE)
-        {  x += FONT_W; continue; }   // skipped, move one char in canvas
+        { x += FONT_W; continue; }    // skipped, move one char in canvas
 
         char *bit = xbmFont[*c - LOWER_ASCII_CODE];
 
@@ -673,8 +705,10 @@ void print_text(int32_t x, int32_t y, const char *str)
                 tx = 0, ty++;        // step to decrease gradient
         }
         // glyph painted, move one char right in text
-        x += FONT_W, ty = 0;        //++str;
+        x += FONT_W, ty = 0;
     }
+
+    return x;
 }
 
 #endif // HAVE_XBM_FONT
@@ -705,7 +739,7 @@ int32_t load_png_bitmap(const int32_t idx, const char *path)
 * int32_t w        =  width of png part to blit
 * int32_t h        =  height of png part to blit
 ***********************************************************************/
-void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
+int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h)
 {
     int32_t i, k;
     uint32_t *px = NULL;
@@ -720,6 +754,8 @@ void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int
                 *px = mix_color(*px,
                                 ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)]);
             }
+
+    return (c_x + w);
 }
 
 

@@ -575,7 +575,7 @@ static void vsh_menu_thread(uint64_t arg)
             VSHPadGetData(&pdata);         // else use the vsh pad_data struct
 
         if((pdata.len > 0)
-        && (vshmain_EB757101() == 0))      // we are in XMB
+        && (GetCurrentRunningMode() == 0)) // we are in XMB
         {
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 

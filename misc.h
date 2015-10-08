@@ -38,8 +38,6 @@
                             ((((uint32_t)v) & 0x000000FF) << 24)))
 
 
-uint32_t get_vsh_toc(void);
-
 void VSHPadGetData(CellPadData *data);
 void start_stop_vsh_pad(uint8_t flag);
 void MyPadGetData(int32_t port_no, CellPadData *data);

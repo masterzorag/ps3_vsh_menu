@@ -11,29 +11,31 @@
 
 // font constants
 #ifdef HAVE_SYS_FONT
-#define FONT_W         18.f            // font width
-#define FONT_H         18.f            // font height
-#define FONT_WEIGHT    1.f             // font weight
-#define FONT_CACHE_MAX 256             // max glyph cache count
+#define FONT_W          18.f            // font width
+#define FONT_H          18.f            // font height
+#define FONT_WEIGHT     1.f             // font weight
+#define FONT_CACHE_MAX  256             // max glyph cache count
 
 #elif HAVE_PNG_FONT
-#define PNG_FONT_PATH "/dev_hdd0/font.png" // use external font.png
-#define FONT_PNG_W     512                 // width of font png file in pixel
-#define FONT_PNG_H     514                 // height of font png file in pixel
-#define FONT_W         18                  // font width in pixel
-#define FONT_H         22                  // font height in pixel
+#define PNG_FONT_PATH   "/dev_hdd0/font.png" // use external font.png
+#define FONT_PNG_W      512                  // width of font png file in pixel
+#define FONT_PNG_H      514                  // height of font png file in pixel
+#define FONT_W          18                   // font width in pixel
+#define FONT_H          22                   // font height in pixel
 
 #elif HAVE_XBM_FONT
-#define FONT_W         16                  // use hardcoded xbm_font
-#define FONT_H         16
-#define SHADOW_PX      2                   // lower-right text shadow in pixel
+#define FONT_W          16                   // use hardcoded xbm_font
+#define FONT_H          16
+
 #endif
 
 // common
-#define FONT_D         1                   // distance to next char
-#define BORD_D         4                   // distance from canvas border
+#define SHADOW_PX       2                    // lower-right text shadow in pixel
+#define FONT_D          1                    // distance to next char
+#define BORD_D          4                    // distance from canvas border
+
 // additional png bitmaps
-#define PNG_MAX        4
+#define PNG_MAX         4
 
 // canvas constants
 // the values for canvas width and height can be changed for make a smaller or larger
@@ -87,6 +89,7 @@ typedef struct _Bitmap {
 
 void font_finalize(void);
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
+uint16_t get_render_length(const char *str);
 
 #elif HAVE_XBM_FONT
 
@@ -94,8 +97,6 @@ void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
 void update_gradient(const uint32_t *a, const uint32_t *b);
 
 #endif
-
-
 
 // graphic buffers
 typedef struct _Buffer{
@@ -121,9 +122,9 @@ typedef struct _DrawCtx{
     uint32_t *font;        // addr of decoded png font
 
     #elif HAVE_XBM_FONT
-    uint32_t fading_color[LINEAR_GRADIENT_STEP];    // precomputed gradient
-    #endif
+    uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient
 
+    #endif
     Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx
 __attribute__((aligned(16)));

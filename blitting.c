@@ -354,6 +354,34 @@ static int32_t utf8_to_ucs4(uint8_t *utf8, uint32_t *ucs4)
     return len;
 }
 
+
+/***********************************************************************
+* get render lenght of text, in pixel
+*
+* const char *str = string to measure
+***********************************************************************/
+uint16_t get_render_length(const char *str)
+{
+    uint32_t code = 0;                 // char unicode
+    uint8_t *utf8 = (uint8_t*)str;
+    uint16_t len  = 0;
+    Glyph *glyph;                      // char glyph
+    memset(&glyph, 0, sizeof(Glyph));
+
+    while(1)    // get render length
+    {
+        utf8 += utf8_to_ucs4(utf8, &code);
+
+        if(code == 0) break;
+
+        glyph = get_glyph(code);
+        len += glyph->metrics.Horizontal.advance + bitmap->distance;
+    }
+
+    return (uint16_t)(len - bitmap->distance);
+}
+
+
 /***********************************************************************
 * print text, from prerendered TTF
 * 
@@ -369,11 +397,12 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
     int32_t o_x = x, o_y = y + bitmap->horizontal_layout.baseLineY; // origin x/y
     Glyph *glyph;                                                   // char glyph
     uint8_t *utf8 = (uint8_t*)str;
+    uint32_t *px = NULL;
 
     memset(&glyph, 0, sizeof(Glyph));
 
     // render text
-    while(1)
+    while(*str != '\0')
     {
         utf8 += utf8_to_ucs4(utf8, &code);
 
@@ -402,10 +431,20 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
                     if((glyph->image[i * glyph->w + k])
                     && (t_x + k < CANVAS_W)
                     && (t_y + i < CANVAS_H))
-                        ctx.canvas[(t_y + i) * CANVAS_W + t_x + k] =
-                            mix_color(ctx.canvas[(t_y + i) * CANVAS_W + t_x + k],
-                                 ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
-                                 (ctx.fg_color & 0x00FFFFFF));
+                    {
+                        px = &ctx.canvas[(t_y + i) * CANVAS_W + t_x + k];
+
+                        // paint FG pixel
+                        *px = mix_color(*px,
+                                       ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
+                                        (ctx.fg_color & 0x00FFFFFF));
+
+                        // displace shadow by (+SHADOW_PX, +SHADOW_PX)
+                        px += (SHADOW_PX * CANVAS_W + SHADOW_PX);
+
+                        // paint the shadow
+                        *px = mix_color(*px, ctx.bg_color & 0x66000000);
+                    }
 
             // get origin-x for next char
             o_x += glyph->metrics.Horizontal.advance + bitmap->distance;
@@ -433,11 +472,12 @@ void init_graphic()
     #ifdef HAVE_SYS_FONT
     ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
     font_init();
+
     #elif HAVE_PNG_FONT
     Buffer font = load_png(PNG_FONT_PATH);  // load font png
     ctx.font    = font.addr;
-    #endif
 
+    #endif
     // get current display values
     offset = *(uint32_t*)0x60201104;    // start offset of current framebuffer
     getDisplayPitch(&pitch, &unk1);     // framebuffer pitch size
@@ -516,32 +556,20 @@ void draw_background()
 * compute x to align text into canvas
 *
 * const char *str = referring string
-* uint8_t align   = RIGHT / CENTER (1/2)
+* uint8_t align.  = RIGHT / CENTER (1/2)
 ***********************************************************************/
 uint16_t get_aligned_x(const char *str, const uint8_t alignment)
 {
+    uint16_t len; // str lenght, in pixels!
+
     #ifdef HAVE_SYS_FONT
-    uint32_t code = 0;                 // char unicode
-    uint8_t *utf8 = (uint8_t*)str;
-    int32_t len = 0;
-    Glyph *glyph;                      // char glyph
-    memset(&glyph, 0, sizeof(Glyph));
+    len = get_render_length(str);
 
-    // get render length
-    while(1)
-    {
-        utf8 += utf8_to_ucs4(utf8, &code);
-
-        if(code == 0) break;
-
-        glyph = get_glyph(code);
-        len += glyph->metrics.Horizontal.advance + bitmap->distance;
-    }
-
-    return (uint16_t)((CANVAS_W - len - bitmap->distance) / alignment);
     #else
-    return (uint16_t)((CANVAS_W - (strlen(str) * FONT_W)) / alignment);
+    len = (strlen(str) * FONT_W); // monospaced font
+
     #endif
+    return (uint16_t)((CANVAS_W - len) / alignment);
 }
 
 
@@ -649,17 +677,14 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 {
     for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
     {
-        if(*a != *b)
-            ctx.fading_color[i] = linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
-        else
-            ctx.fading_color[i] = *a;
+        ctx.fading_color[i] = (*a == *b) ? *a : linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
     }
 }
 
 #include "xbm_font.h"
 
 /***********************************************************************
-* print text, with data from xbm_font.h
+* print text, with bitmap data from xbm_font.h
 *
 * int32_t x       = start x coordinate into canvas
 * int32_t y       = start y coordinate into canvas

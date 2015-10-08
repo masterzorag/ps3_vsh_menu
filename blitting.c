@@ -63,7 +63,6 @@ static void dump_bg(void)
 #ifdef HAVE_SYS_FONT
 
 static Bitmap *bitmap = NULL;                       // font glyph cache
-static uint32_t font_obj = 0;                       // vsh font library object address
 static const CellFontLibrary *font_lib_ptr = NULL;  // font library pointer
 static uint32_t vsh_fonts[16] = {};                 // addresses of the 16 system font slots
 
@@ -75,10 +74,11 @@ int32_t LINE_HEIGHT = 0;
 static int32_t get_font_object(void)
 {
     uint8_t i;
-    int32_t pm_start = 0x10000UL;
+    int32_t font_obj = 0;                            // vsh font library object address
+    int32_t pm_start = 0x10000;
     uint64_t pat[2]  = {0x3800001090810080ULL, 0x90A100849161008CULL};
 
-    while(pm_start < 0x700000UL)
+    while(pm_start < 0x700000)
     {
         if((*(uint64_t*) pm_start     == pat[0])
         && (*(uint64_t*)(pm_start +8) == pat[1]))
@@ -102,6 +102,32 @@ static int32_t get_font_object(void)
     }
 
     return -1;
+}
+
+/***********************************************************************
+* set font with default settings
+***********************************************************************/
+static void set_font_default(void)
+{
+    int32_t i;
+    bitmap = mem_alloc(sizeof(Bitmap));
+    memset(bitmap, 0, sizeof(Bitmap));
+
+    // set font
+    FontSetScalePixel(&ctx.font, FONT_W, FONT_H);
+    FontSetEffectWeight(&ctx.font, FONT_WEIGHT);
+
+    FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
+    LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
+
+    bitmap->max    = FONT_CACHE_MAX;
+    bitmap->count  = 0;
+    bitmap->font_w = FONT_W;
+    bitmap->font_h = FONT_H;
+    bitmap->weight = FONT_WEIGHT;
+
+    for(i = 0; i < FONT_CACHE_MAX; i++)
+        bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
 }
 
 /***********************************************************************
@@ -144,6 +170,8 @@ static void font_init(void)
     FontCreateRenderer(font_lib_ptr, &rd_cfg, &ctx.renderer);
 
     FontBindRenderer(&ctx.font, &ctx.renderer);
+
+    set_font_default();
 }
 
 /***********************************************************************
@@ -151,9 +179,9 @@ static void font_init(void)
 ***********************************************************************/
 void font_finalize(void)
 {
-  FontUnbindRenderer(&ctx.font);
-  FontDestroyRenderer(&ctx.renderer);
-  FontCloseFont(&ctx.font);
+    FontUnbindRenderer(&ctx.font);
+    FontDestroyRenderer(&ctx.renderer);
+    FontCloseFont(&ctx.font);
 }
 
 /***********************************************************************
@@ -197,7 +225,8 @@ static void render_glyph(int32_t idx, uint32_t code)
     // copy glyph bitmap into cache
     for(k = 0; k < bitmap->glyph[idx].h; k++)
         for(i = 0; i < bitmap->glyph[idx].w; i++)
-            bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] = transinfo.Image[k * ibw + i];
+            bitmap->glyph[idx].image[k*bitmap->glyph[idx].w + i] = 
+            transinfo.Image[k * ibw + i];
 
     bitmap->glyph[idx].metrics = metrics;
 }
@@ -232,34 +261,33 @@ static Glyph *get_glyph(uint32_t code)
 }
 
 /***********************************************************************
-* set font and create a new bitmap cache
+* set new font values
 * 
 * float_t font_w    =  char width
 * float_t font_h    =  char height
 * float_t weight    =  line weight
 * int32_t distance  =  distance between chars
 ***********************************************************************/
-void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance /* unused */)
+void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance)
 {
-    int32_t i;
-    bitmap = mem_alloc(sizeof(Bitmap));
-    memset(bitmap, 0, sizeof(Bitmap));
+    // max size is 32 * 32 pixels
+    if(font_w > 32.f && font_h > 32.f)
+        font_w = font_h = 32.f;
 
     // set font
     FontSetScalePixel(&ctx.font, font_w, font_h);
     FontSetEffectWeight(&ctx.font, weight);
+
+    // get and set new line height
     FontGetHorizontalLayout(&ctx.font, &bitmap->horizontal_layout);
 
     LINE_HEIGHT = bitmap->horizontal_layout.lineHeight;
 
-    bitmap->max    = FONT_CACHE_MAX;
-    bitmap->count  = 0;
-    bitmap->font_w = font_w;
-    bitmap->font_h = font_h;
-    bitmap->weight = weight;
-
-    for(i = 0; i < FONT_CACHE_MAX; i++)
-        bitmap->glyph[i].image = (uint8_t *)ctx.font_cache + (i * 0x400);
+    bitmap->count    = 0;                             // reset font cache
+    bitmap->font_w   = font_w;
+    bitmap->font_h   = font_h;
+    bitmap->weight   = weight;
+    bitmap->distance = distance;
 }
 
 /***********************************************************************

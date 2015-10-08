@@ -1289,8 +1289,8 @@ extern int sdk_832304BC(int portNo, uint16_t *statusLevel);  // getBattery
 // sdk_8FAB7348                                              // ? sys_hid_manager_ioctl(u32 port_no, u32 packet_id(0), u8[0x44], u32 size(0x44))
 extern int sdk_4C751D97(int portNo, int deviceNo);           // unmap_port_from_pad, e.g. (0, 0) unmap pad(device 0) from port 0
 extern int sdk_CF03F47A(int portNo, int deviceNo);           // map_port_to_pad, e.g. (2, 0) map pad(device 0) to port 3(2)
-// sdk_6C54092D  // ? start: io_sys_config_stop/free
-// sdk_5161DDBD  // ? end: register/alloc
+// sdk_6C54092D  // ? end: io_sys_config_stop/free
+// sdk_5161DDBD  // ? start: register/alloc
 
 // keyboard
 // sdk_F133FB78  // ?
@@ -1447,7 +1447,9 @@ extern int sdk_5C06471E(int portNo, int deviceNo);           // map_port_to_mous
 // sdk_DA0FB37E  // ?
 // sdk_DAF887EA  // avset_setccmulti 	
 // sdk_DB69D144  // ?
-// sdk_DF1C334E  // sys_rsx_attribute
+
+extern void sdk_DF1C334E(void);  // ? sys_rsx_attribute(), base pointer get font lib ptr
+
 // sdk_DF2DCF22  // avset_audiomode (2)
 // sdk_DFA003EA  // ?
 // sdk_DFABCE03  // ?
@@ -1478,5 +1480,6 @@ extern int sdk_5C06471E(int portNo, int deviceNo);           // map_port_to_mous
 // sdk_FDC00061  // ?
 // sdk_FE9A658C  // ?
 // sdk_FF17D731  // avset_addsigctrl (0)
+
 
 #endif // __SDK_H__ 

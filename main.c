@@ -99,7 +99,7 @@ static uint32_t menu_colors[4][3] __attribute__((aligned(16))) = {
     0xFFA0A0A0,     // black, opac
     0xFFFFFFFF      // white, opac
 },
-{   // Fg_2_colors[2] to use better gradient color, foreach view
+{   // Fg_2_colors[2] to use linear gradient color, foreach view
     0xFF600090,
     0xFF6060A0,
     0xFF303030
@@ -119,15 +119,15 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
 {
     "1: Make a single beep",
     "2: Make a double beep",
-    "3: Enter second menu view",
-    "4: Setup colors menu view",
+    "3: Dump pad data",
+    "4: Setup colors menu",
     "5: Play trophy sound",
     "6: Make screenshot",
     "7: Make screenshot with Menu",
     "8: Reset PS3",
     "9: Shutdown PS3"
 },
-{   // dump pad data menu
+{   // Dump pad data
     "1: test",
     "2: screenshot",
     "3: Alpha",
@@ -136,7 +136,7 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "6: Blue",
     "7: test"
 },
-{   // setup color menu
+{   // Setup colors menu
     "1:bg,fg,f2",
     "2:bg,fg,f2",
     "3:bg,fg,f2",
@@ -182,13 +182,13 @@ static void draw_frame(CellPadData *data)
             tc = &blink_color;
             set_foreground_color(*tc);
             #ifdef HAVE_XBM_FONT
-            update_gradient(tc, &menu_colors[2][view]);   // do same color
+            update_gradient(tc, tc);    // full color
             #endif
         }
 
         print_text(BORD_D, ty, entry_str[view][i]);
 
-        // (re)set back if just draw selectd line
+        // (re)set back if just draw selected line
         if(tc)
         {
             set_foreground_color(menu_colors[1][view]);
@@ -200,11 +200,22 @@ static void draw_frame(CellPadData *data)
     // we pass with default colors setted, per view
 
     // print headline string, coordinates in canvas
-    print_text(BORD_D, BORD_D, "PS3 VSH Menu");
+    switch(view)
+    {
+      case 1:
+      case 2:
+        strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3));  // strip leading number
+        break;
+
+      default:
+        strcpy(tmp_ln, "PS3 VSH Menu");
+        break;
+    }
+    print_text(BORD_D, BORD_D, tmp_ln);  // from upper-left, minimum border
 
     // ...
 
-    // second menu, realtime pad data dump:
+    // second view: Dump pad data
     if(view == 1)
     {   // used in text position
         uint16_t ty = 180;
@@ -221,7 +232,7 @@ static void draw_frame(CellPadData *data)
         tx = 0, ty = 200;
         for(i = 0; i < 32; i++)
         {
-            sprintf(&tmp_ln[x], "%.4x:", data->button[i]);
+            sprintf(&tmp_ln[x], "%.4X:", data->button[i]);
             x += 5;
             tmp_ln[x] = '\0';
 
@@ -237,7 +248,7 @@ static void draw_frame(CellPadData *data)
         }
 
     }
-    else if(view == 2)   // only on third view
+    else if(view == 2)  // third view: Setup colors menu
     {
         uint32_t *tc = NULL;
         uint8_t x, g;  // grounds
@@ -257,7 +268,8 @@ static void draw_frame(CellPadData *data)
                 update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
                 #endif
 
-                sprintf(tmp_ln, "%.8x", *tc);        // print color
+                sprintf(tmp_ln, "%.8X", *tc);        // print color
+
                 print_text(tx, ty, tmp_ln);
 
                 if(i == line                         // selected entry
@@ -267,7 +279,7 @@ static void draw_frame(CellPadData *data)
                     tc = &blink_color;               // blink
                     set_foreground_color(*tc);
                     #ifdef HAVE_XBM_FONT
-                    update_gradient(tc, &menu_colors[2][i]);    // do same color?
+                    update_gradient(tc, tc);         // full color
                     #endif
 
                     // put a terminator and print one of AA:RR:GG:BB\0
@@ -579,7 +591,7 @@ static void vsh_menu_thread(uint64_t arg)
             VSHPadGetData(&pdata);         // else use the vsh pad_data struct
 
         if((pdata.len > 0)
-        && (vshmain_EB757101() == 0))      // we are in XMB
+        && (GetCurrentRunningMode() == 0)) // we are in XMB
         {
             curpad = (pdata.button[2] | (pdata.button[3] << 8));
 

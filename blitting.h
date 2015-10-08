@@ -139,7 +139,7 @@ void set_foreground_color(uint32_t color);
 void draw_background(void);
 
 int32_t load_png_bitmap(const int32_t idx, const char *path);
-void draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
+int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
 
 void screenshot(const uint8_t mode);
 
@@ -148,7 +148,7 @@ void screenshot(const uint8_t mode);
 #define RIGHT     1
 #define CENTER    2
 uint16_t get_aligned_x(const char *str, const uint8_t alignment);
-void print_text(int32_t x, int32_t y, const char *str);
+int32_t print_text(int32_t x, int32_t y, const char *str);
 
 // primitives
 //void draw_pixel(int32_t x, int32_t y);

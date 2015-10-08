@@ -9,34 +9,33 @@ static void *vsh_pdata_addr = NULL;
 * search and return vsh_process toc
 * Not the best way, but it work, it's generic and it is fast enough...
 ***********************************************************************/
-uint32_t get_vsh_toc(void)
+static int32_t get_vsh_toc(void)
 {
-    uint32_t pm_start  = 0x10000UL;
-    uint32_t v0 = 0, v1 = 0, v2 = 0;
+    int32_t pm_start  = 0x10000;
+    int32_t v0 = 0, v1 = 0, v2 = 0;
 
-    while(pm_start < 0x700000UL)
+    while(pm_start < 0x700000)
     {
-        v0 = *(uint32_t*)(pm_start +0x00);
-        v1 = *(uint32_t*)(pm_start +0x04);
-        v2 = *(uint32_t*)(pm_start +0x0C);
+        v0 = *(int32_t*)(pm_start +0x00);
+        v1 = *(int32_t*)(pm_start +0x04);
+        v2 = *(int32_t*)(pm_start +0x0C);
 
-        if((v0 == 0x10200UL/* .init_proc() */) && (v1 == v2)) break;
+        if((v0 == 0x10200 /* .init_proc() */ ) && (v1 == v2)) break;
 
         pm_start += 4;
     }
 
-    return v1;
+    return (int32_t)v1; 
 }
 
 /***********************************************************************
 * get vsh io_pad_object
 ***********************************************************************/
-static uint32_t get_vsh_pad_obj(void)
+static int32_t get_vsh_pad_obj(void)
 {
-    uint32_t (*base)(uint32_t) = sys_io_3733EA3C;               // get pointer to cellPadGetData()
-    int16_t idx = *(uint32_t*)(*(uint32_t*)base) & 0x0000FFFF;  // get got_entry idx from first instruction,  
-    uint32_t got_entry = (idx + get_vsh_toc());                 // get got_entry of io_pad_object
-    return (*(uint32_t*)got_entry);                             // return io_pad_object address
+    int16_t idx = *(int32_t*)(*(int32_t*)((void*)sys_io_3733EA3C)) & 0x0000FFFF;  // get got_entry idx from first instruction,  
+    int32_t got_entry = (idx + get_vsh_toc());                                    // get got_entry of io_pad_object
+    return (int32_t)(*(int32_t*)got_entry);                                       // return io_pad_object address
 }
 
 /***********************************************************************
@@ -46,19 +45,19 @@ static uint32_t get_vsh_pad_obj(void)
 ***********************************************************************/
 void VSHPadGetData(CellPadData *data)
 {
-    uint32_t pm_start = 0x10000UL;
-    uint64_t pat[2]   = {0x380000077D3F4B78ULL, 0x7D6C5B787C0903A6ULL};
+    int32_t pm_start = 0x10000;
+    uint64_t pat[2]  = {0x380000077D3F4B78ULL, 0x7D6C5B787C0903A6ULL};
 
     if(!vsh_pdata_addr)        // first time, get address
     {
-        while(pm_start < 0x700000UL)
+        while(pm_start < 0x700000)
         {
             if((*(uint64_t*) pm_start     == pat[0])
             && (*(uint64_t*)(pm_start +8) == pat[1]))
             {
-                vsh_pdata_addr = (void*)(uint32_t)(
-                    (int32_t)((*(uint32_t*)(pm_start +0x234) & 0x0000FFFF) <<16) +
-                    (int16_t)( *(uint32_t*)(pm_start +0x244) & 0x0000FFFF));
+                vsh_pdata_addr = (void*)(int32_t)(
+                    (int32_t)((*(int32_t*)(pm_start +0x234) & 0x0000FFFF) <<16) +
+                    (int16_t)( *(int32_t*)(pm_start +0x244) & 0x0000FFFF));
 
                 break;
             }
@@ -84,7 +83,7 @@ void VSHPadGetData(CellPadData *data)
 ***********************************************************************/
 void start_stop_vsh_pad(uint8_t flag)
 {
-    uint32_t lib_init_flag = get_vsh_pad_obj();
+    int32_t lib_init_flag = get_vsh_pad_obj();
     *(uint8_t*)lib_init_flag = flag;
 }
 
@@ -97,7 +96,7 @@ void start_stop_vsh_pad(uint8_t flag)
 ***********************************************************************/
 void MyPadGetData(int32_t port_no, CellPadData *data)
 {
-    uint32_t port = *(uint32_t*)(*(uint32_t*)(get_vsh_pad_obj() +4) + 0x104 + port_no * 0xE8);
+    int32_t port = *(int32_t*)(*(int32_t*)(get_vsh_pad_obj() +4) + 0x104 + port_no * 0xE8);
 
     // sys_hid_manager_read()
     system_call_4(0x1F6, (uint64_t)port, /*0x02*//*0x82*/0xFF, (uint64_t)(uint32_t)data+4, 0x80);

@@ -291,7 +291,7 @@ static void draw_frame(CellPadData *data)
                         #ifdef HAVE_SYS_FONT
                         tmp_ln[x] = '\0';
                         add_x = get_render_length(tmp_ln);
-                        sprintf(tmp_ln, "%.8x", menu_colors[g][i]); // need to restore
+                        sprintf(tmp_ln, "%.8X", menu_colors[g][i]); // need to restore
 
                         #elif HAVE_XBM_FONT
                         add_x = (x * FONT_W);        // xbm_font is monospace

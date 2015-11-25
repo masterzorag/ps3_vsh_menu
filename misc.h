@@ -48,7 +48,6 @@ void delete_turnoff_flag(void);
 void play_rco_sound(const char *plugin, const char *sound);
 void buzzer(uint8_t mode);
 
-void get_temperature(uint32_t _dev, uint32_t *_temp);
 void read_temperature(uint32_t *t1, uint32_t *t2);
 
 void read_meminfo(char *data);
@@ -59,7 +58,6 @@ uint64_t lv1peek(uint64_t addr);
 uint64_t lv1poke(uint64_t addr, uint64_t value);
 
 void send_wm_request(char *cmd);
-int connect_to_webman(void);
 //void wait_for_request(void);
 
 #endif // __MISC_H__

@@ -157,7 +157,7 @@ void buzzer(uint8_t mode)
 /***********************************************************************
 * #define SC_GET_TEMPERATURE                (383)
 ***********************************************************************/
-void get_temperature(uint32_t _dev, uint32_t *_temp)
+static void get_temperature(uint32_t _dev, uint32_t *_temp)
 {
     system_call_2(383, (uint64_t)(uint32_t) _dev, (uint64_t)(uint32_t) _temp);
 }
@@ -221,7 +221,7 @@ uint64_t lv1poke(uint64_t addr, uint64_t value)
 * webMAN MOD now supports http requests through a local file interface (/dev_hdd0/tmp/wm_request)
 * Example: GET /mount.ps3/dev_hdd0/PS3ISO/MyGame.iso
 ***********************************************************************/
-int connect_to_webman(void)
+static int connect_to_webman(void)
 {
     struct sockaddr_in sin;
     int s;

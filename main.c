@@ -156,11 +156,13 @@ static void draw_frame(CellPadData *data)
     uint32_t blink_color = (uint32_t)rand();
 
     // set the right colors for current view
-    set_background_color(menu_colors[0][view]);
+    #ifdef HAVE_PNG_FONT
     set_foreground_color(menu_colors[1][view]);
-    #ifdef HAVE_XBM_FONT
+    #else
     update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
     #endif
+
+    set_background_color(menu_colors[0][view]);
 
     draw_background();
 
@@ -180,8 +182,10 @@ static void draw_frame(CellPadData *data)
         if(i == line)                   // selected entry, blink
         {
             tc = &blink_color;
+
+            #ifdef HAVE_PNG_FONT
             set_foreground_color(*tc);
-            #ifdef HAVE_XBM_FONT
+            #else
             update_gradient(tc, tc);    // full color
             #endif
         }
@@ -191,13 +195,14 @@ static void draw_frame(CellPadData *data)
         // (re)set back if just draw selected line
         if(tc)
         {
+            #ifdef HAVE_PNG_FONT
             set_foreground_color(menu_colors[1][view]);
-            #ifdef HAVE_XBM_FONT
+            #else
             update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
             #endif
         }
     }
-    // we pass with default colors setted, per view
+    // we pass with default colors ready, per view
 
     // print headline string, coordinates in canvas
     switch(view)
@@ -263,8 +268,10 @@ static void draw_frame(CellPadData *data)
                 ty = 8 + ((FONT_H + FONT_D) * (i + 1));
 
                 tc = &menu_colors[g][i];
+
+                #ifdef HAVE_PNG_FONT
                 set_foreground_color(*tc);
-                #ifdef HAVE_XBM_FONT
+                #else
                 update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
                 #endif
 
@@ -277,8 +284,10 @@ static void draw_frame(CellPadData *data)
                 && (col -1) /4 /* ARGB */ == g)      // selected color component
                 {
                     tc = &blink_color;               // blink
+
+                    #ifdef HAVE_PNG_FONT
                     set_foreground_color(*tc);
-                    #ifdef HAVE_XBM_FONT
+                    #else
                     update_gradient(tc, tc);         // full color
                     #endif
 
@@ -309,8 +318,9 @@ static void draw_frame(CellPadData *data)
     // ...
 
     // (re)set back after draw last line
+    #ifdef HAVE_PNG_FONT
     set_foreground_color(menu_colors[1][view]);
-    #ifdef HAVE_XBM_FONT
+    #else
     update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
     #endif
 

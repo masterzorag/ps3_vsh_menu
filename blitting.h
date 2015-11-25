@@ -64,6 +64,16 @@
 #define GET_B(color) ((color >> 0) &0xFF)
 
 
+#ifdef HAVE_PNG_FONT
+void set_foreground_color(uint32_t color);
+
+#else
+#define LINEAR_GRADIENT_STEP      ((uint8_t)(FONT_H /2))     // steps we split delta
+void update_gradient(const uint32_t *a, const uint32_t *b);
+
+#endif
+
+
 #ifdef HAVE_SYS_FONT
 
 extern int32_t LINE_HEIGHT;
@@ -91,12 +101,8 @@ void font_finalize(void);
 void set_font(float_t font_w, float_t font_h, float_t weight, int32_t distance);
 uint16_t get_render_length(const char *str);
 
-#elif HAVE_XBM_FONT
-
-#define LINEAR_GRADIENT_STEP      (FONT_H /2)     // steps we split delta
-void update_gradient(const uint32_t *a, const uint32_t *b);
-
 #endif
+
 
 // graphic buffers
 typedef struct _Buffer{
@@ -110,21 +116,23 @@ __attribute__((aligned(8)));
 typedef struct _DrawCtx{
     uint32_t *canvas;      // addr of canvas
     uint32_t *bg;          // addr of background backup
-    uint32_t bg_color;     // background color
-    uint32_t fg_color;     // foreground color
+//    MenuCtx  *color;       // addr of color setup, per view
+
+    uint32_t bg_color;     // background color  
 
     #ifdef HAVE_SYS_FONT
     uint32_t *font_cache;  // addr of glyph bitmap cache buffer
     CellFont font;
     CellFontRenderer renderer;
-
-    #elif HAVE_PNG_FONT
-    uint32_t *font;        // addr of decoded png font
-
-    #elif HAVE_XBM_FONT
-    uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient
-
     #endif
+
+    #ifdef HAVE_PNG_FONT
+    uint32_t *font;        // addr of decoded png font
+    uint32_t fg_color;     // foreground color
+    #else
+    uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient [0-7]
+    #endif
+
     Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx
 __attribute__((aligned(16)));
@@ -135,7 +143,7 @@ void flip_frame(void);
 void pause_RSX_rendering(void);
 
 void set_background_color(uint32_t color);
-void set_foreground_color(uint32_t color);
+
 void draw_background(void);
 
 int32_t load_png_bitmap(const int32_t idx, const char *path);

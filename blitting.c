@@ -434,10 +434,10 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
                     {
                         px = &ctx.canvas[(t_y + i) * CANVAS_W + t_x + k];
 
-                        // paint FG pixel
+                        // paint FG pixel with precomputed fading colors
                         *px = mix_color(*px,
                                        ((uint32_t)glyph->image[i * glyph->w + k] <<24) |
-                                        (ctx.fg_color & 0x00FFFFFF));
+                                        (ctx.fading_color[i /2] & 0x00FFFFFF));
 
                         // displace shadow by (+SHADOW_PX, +SHADOW_PX)
                         px += (SHADOW_PX * CANVAS_W + SHADOW_PX);
@@ -467,7 +467,6 @@ void init_graphic()
     ctx.canvas   = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // canvas buffer
     ctx.bg       = mem_alloc(CANVAS_W * CANVAS_H * sizeof(uint32_t));    // background buffer
     ctx.bg_color = 0xFF000000;          // black, opaque
-    ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     #ifdef HAVE_SYS_FONT
     ctx.font_cache = mem_alloc(FONT_CACHE_MAX * 32 * 32); // glyph bitmap cache
@@ -476,6 +475,7 @@ void init_graphic()
     #elif HAVE_PNG_FONT
     Buffer font = load_png(PNG_FONT_PATH);  // load font png
     ctx.font    = font.addr;
+    ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     #endif
     // get current display values
@@ -521,6 +521,7 @@ void set_background_color(uint32_t color)
     ctx.bg_color = color;
 }
 
+#ifdef HAVE_PNG_FONT
 
 /***********************************************************************
 * set foreground color
@@ -530,6 +531,52 @@ void set_foreground_color(uint32_t color)
     ctx.fg_color = color;
 }
 
+#else
+
+/***********************************************************************
+* linear gradient (ARGB)
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+* uint8_t steps   = number of chunk we split fading
+* uint8_t step    = which step we compute and return
+***********************************************************************/
+static uint32_t linear_gradient(const uint32_t *a, const uint32_t *b, const uint8_t steps, const uint8_t step)
+{
+    uint8_t fr[4], to[4];
+    float_t st[4];
+
+    fr[0] = GET_A(*a), fr[1] = GET_R(*a), fr[2] = GET_G(*a), fr[3] = GET_B(*a),
+    to[0] = GET_A(*b), to[1] = GET_R(*b), to[2] = GET_G(*b), to[3] = GET_B(*b);
+
+    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
+    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
+    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
+    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
+
+    return ARGB((int)fr[0] + (int)(st[0] * step),
+                (int)fr[1] + (int)(st[1] * step),
+                (int)fr[2] + (int)(st[2] * step),
+                (int)fr[3] + (int)(st[3] * step));
+}
+
+/***********************************************************************
+* update_gradient
+*
+* precompute palette to use in print_text() and setup colors range
+*
+* uint32_t *a     = pointer to foreground start color
+* uint32_t *b     = pointer to foreground end color
+***********************************************************************/
+void update_gradient(const uint32_t *a, const uint32_t *b)
+{
+    for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
+    {
+        ctx.fading_color[i] = (*a == *b) ? *a : linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
+    }
+}
+
+#endif
 
 /***********************************************************************
 * draw background, with current background color
@@ -637,49 +684,6 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
 }
 
 #elif HAVE_XBM_FONT
-
-/***********************************************************************
-* linear gradient (ARGB)
-*
-* uint32_t *a     = pointer to foreground start color
-* uint32_t *b     = pointer to foreground end color
-* uint8_t steps   = number of chunk we split fading
-* uint8_t step    = which step we compute and return
-***********************************************************************/
-static uint32_t linear_gradient(const uint32_t *a, const uint32_t *b, const uint8_t steps, const uint8_t step)
-{
-    uint8_t fr[4], to[4];
-    float_t st[4];
-
-    fr[0] = GET_A(*a), fr[1] = GET_R(*a), fr[2] = GET_G(*a), fr[3] = GET_B(*a),
-    to[0] = GET_A(*b), to[1] = GET_R(*b), to[2] = GET_G(*b), to[3] = GET_B(*b);
-
-    st[0] = ((to[0] - fr[0]) / (float_t)(steps -1));
-    st[1] = ((to[1] - fr[1]) / (float_t)(steps -1));
-    st[2] = ((to[2] - fr[2]) / (float_t)(steps -1));
-    st[3] = ((to[3] - fr[3]) / (float_t)(steps -1));
-
-    return ARGB((int)fr[0] + (int)(st[0] * step),
-                (int)fr[1] + (int)(st[1] * step),
-                (int)fr[2] + (int)(st[2] * step),
-                (int)fr[3] + (int)(st[3] * step));
-}
-
-/***********************************************************************
-* update_gradient
-*
-* precompute palette to use in print_text() and setup colors range
-*
-* uint32_t *a     = pointer to foreground start color
-* uint32_t *b     = pointer to foreground end color
-***********************************************************************/
-void update_gradient(const uint32_t *a, const uint32_t *b)
-{
-    for(uint8_t i = 0; i < LINEAR_GRADIENT_STEP; i++)
-    {
-        ctx.fading_color[i] = (*a == *b) ? *a : linear_gradient(a, b, LINEAR_GRADIENT_STEP, i);
-    }
-}
 
 #include "xbm_font.h"
 

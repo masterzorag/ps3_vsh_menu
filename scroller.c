@@ -41,15 +41,16 @@ void draw_text(const int y)
                 * 0.02)       // it turns out in num of bends
                 * 20;         // +/- vertical bounds over y
 
-            print_text(x, y + amp, c);
+            x = print_text(x, y + amp, c);
+        } else {
+            #ifdef HAVE_SYS_FONT
+            x += get_render_length(c);
+
+            #else
+            x += FONT_W;
+
+            #endif
         }
-        #ifdef HAVE_SYS_FONT
-        x += get_render_length(c);
-
-        #else
-        x += FONT_W;
-
-        #endif
     }
 }
 

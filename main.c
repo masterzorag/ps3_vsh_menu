@@ -321,11 +321,11 @@ static void draw_frame(CellPadData *data)
     #endif
 
     /* position footer info */
-    ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D;  // additional px from bottom
+    ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D - SHADOW_PX;  // additional px from bottom
 
     // sys memory stats, on the right
     read_meminfo(tmp_ln);
-    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D;  // additional px from R margin
+    tx = get_aligned_x(tmp_ln, RIGHT) - BORD_D - SHADOW_PX;  // additional px from R margin
     print_text(tx, ty, tmp_ln);
 
 

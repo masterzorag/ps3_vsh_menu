@@ -11,8 +11,8 @@
 
 // font constants
 #ifdef HAVE_SYS_FONT
-#define FONT_W          18.f            // font width
-#define FONT_H          18.f            // font height
+#define FONT_W          16.f            // font width
+#define FONT_H          16.f            // font height
 #define FONT_WEIGHT     1.f             // font weight
 #define FONT_CACHE_MAX  256             // max glyph cache count
 

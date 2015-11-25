@@ -58,4 +58,8 @@ uint64_t lv2poke(uint64_t addr, uint64_t value);
 uint64_t lv1peek(uint64_t addr);
 uint64_t lv1poke(uint64_t addr, uint64_t value);
 
+void send_wm_request(char *cmd);
+int connect_to_webman(void);
+//void wait_for_request(void);
+
 #endif // __MISC_H__

@@ -187,3 +187,32 @@ void read_meminfo(char *data)
     sprintf(data, "freemem:%i/%ikb", meminfo.avail /1024, meminfo.total /1024);
 }
 
+
+/***********************************************************************
+* peek & poke
+***********************************************************************/
+uint64_t lv2peek(uint64_t addr)
+{
+    system_call_1(6, addr);
+    return_to_user_prog(uint64_t);
+}
+
+uint64_t lv2poke(uint64_t addr, uint64_t value)
+{
+    system_call_2(7, addr, value);
+    return_to_user_prog(uint64_t);
+}
+
+uint64_t lv1peek(uint64_t addr)
+{
+    system_call_1(8, addr);
+    return_to_user_prog(uint64_t);
+}
+
+uint64_t lv1poke(uint64_t addr, uint64_t value)
+{
+    system_call_2(9, addr, value);
+    return_to_user_prog(uint64_t);
+}
+
+

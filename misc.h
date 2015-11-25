@@ -53,4 +53,9 @@ void read_temperature(uint32_t *t1, uint32_t *t2);
 
 void read_meminfo(char *data);
 
+uint64_t lv2peek(uint64_t addr);
+uint64_t lv2poke(uint64_t addr, uint64_t value);
+uint64_t lv1peek(uint64_t addr);
+uint64_t lv1poke(uint64_t addr, uint64_t value);
+
 #endif // __MISC_H__

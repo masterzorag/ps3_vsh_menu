@@ -24,7 +24,6 @@
 #include "mem.h"
 #include "blitting.h"
 
-
 #ifdef DEBUG
 #include "network.h"
 #endif
@@ -72,12 +71,16 @@ static inline sys_prx_id_t prx_get_module_id_by_address(void *addr)
 
 
 ////////////////////////////////////////////////////////////////////////
-// TIMING
+// TIMING, TEMPERATURES, GAMES
 static clock_t startm, stopm;
 static uint16_t tick = 0;
 static double fps = 0;
 
 static uint32_t t1 = 0, t2 = 0;   // keep track of temperatures
+
+#include "games.h"
+struct game_entry *games = NULL;
+int gmc = 0;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -88,34 +91,38 @@ static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
 // Every view have its dedicated Bg/Fg/Fg2 color default combination
-static uint32_t menu_colors[4][3] __attribute__((aligned(16))) = {
-{   // Bg_colors[0][0-2]
+static uint32_t menu_colors[4][4] __attribute__((aligned(16))) = {
+{   // Bg_colors[0][0-3]
     0x7F0000FF,     // blue, semitransparent
     0x70000000,     // black, semitransparent
-    0x7F00FF00      // green, semitransparent
+    0x7F00FF00,     // green, semitransparent
+    0x7FAA0000
 },
-{  // Fg_colors[1][0-2]
+{  // Fg_colors[1][0-3]
     0xFFB0B0B0,     // blue, opac
     0xFFA0A0A0,     // black, opac
-    0xFFFFFFFF      // white, opac
+    0xFFFFFFFF,     // white, opac
+    0xFF9999FF
 },
-{   // Fg_2_colors[2] to use linear gradient color, foreach view
+{   // Fg_2_colors[2] to use linear gradient color, foreach view [0-3]
     0xFF600090,
     0xFF6060A0,
-    0xFF303030
+    0xFF303030,
+    0xFF6060A0
 },
 {   // unused at the moment
     0xFF303030,     // shadows can be the same across view
+    0x00000000,
     0x00000000,
     0x00000000
 }
 };
 
 // max menu entries per view
-static int8_t max_menu[] = {9, 7, 3};
+static int8_t max_menu[] = {10, 7, 3, 12};
 
 // menu entry strings
-const char *entry_str[3][9] __attribute__((aligned(4))) = {
+const char *entry_str[3][10] __attribute__((aligned(4))) = {
 {
     "1: Make a single beep",
     "2: Make a double beep",
@@ -125,7 +132,8 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "6: Make screenshot",
     "7: Make screenshot with Menu",
     "8: Reset PS3",
-    "9: Shutdown PS3"
+    "9: Shutdown PS3",
+    "A: Browse GAMES"
 },
 {   // Dump pad data
     "1: test",
@@ -142,6 +150,7 @@ const char *entry_str[3][9] __attribute__((aligned(4))) = {
     "3:bg,fg,f2",
 }
 };
+
 
 /***********************************************************************
 * draw a frame
@@ -190,7 +199,28 @@ static void draw_frame(CellPadData *data)
             #endif
         }
 
-        print_text(BORD_D, ty, entry_str[view][i]);
+        // print menu lines
+        if(view == 3)  // Browse GAMES view
+        {
+            if(i < gmc )  // && gmc > 0
+            {
+                strcpy(tmp_ln, (games + i)->title);
+                tx = get_aligned_x(tmp_ln, CENTER);
+                print_text(tx, ty, tmp_ln);
+            }
+            else
+            {
+                if(!i)  // or gmc < 1, only once
+                {
+                    sprintf(tmp_ln, "(EE) %.16p, %.2d", games, gmc);
+                    tmp_ln[strlen(tmp_ln)] = '\0';
+                    tx = get_aligned_x(tmp_ln, CENTER);
+                    print_text(BORD_D, ty, tmp_ln);
+                }
+            }
+        }
+        else // default
+            print_text(BORD_D, ty, entry_str[view][i]);
 
         // (re)set back if just draw selected line
         if(tc)
@@ -210,6 +240,10 @@ static void draw_frame(CellPadData *data)
       case 1:
       case 2:
         strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3));  // strip leading number
+        break;
+
+      case 3:
+        strcpy(tmp_ln, "listing GAMES folder on HDD0");  // a fixed title
         break;
 
       default:
@@ -345,7 +379,7 @@ static void draw_frame(CellPadData *data)
     {
         fps = (double)(tick / (((double)stopm-startm) / CLOCKS_PER_SEC));
 
-        startm = clock(), tick = 0;              // reset counter
+        startm = clock(), tick = 0;              // reset fps counters
 
         read_temperature(&t1, &t2);              // update temperature data
     }
@@ -354,7 +388,7 @@ static void draw_frame(CellPadData *data)
     sprintf(tmp_ln, "%2.1ffps, C:%iC, R:%iC", fps, t1, t2);
     print_text(BORD_D, ty, tmp_ln);
 
-    tick++;               // keep track of drawn frames
+    tick++;               // keep track of drawn frame
 
 } // end draw_frame()
 
@@ -371,6 +405,8 @@ static void stop_VSH_Menu(void)
     #endif
 
     destroy_heap();       // free heap memory
+
+    games = NULL;         // set refresh flag for next init
 
     rsx_fifo_pause(0);    // continue rsx rendering
 }
@@ -395,7 +431,7 @@ static void do_updown_action(uint16_t curpad)
     uint8_t *value, step, max, c_comp[4];   // single color components
     uint32_t *color = NULL;
 
-    // setup common bounds for selected ground color(col, line)
+    // 1. setup common bounds for selected ground color(col, line)
     if(col)
     {   // A, R, G, B: 0x00-0xFF, no bound: can loop
         value = &c_comp[(col -1) %4];
@@ -411,7 +447,7 @@ static void do_updown_action(uint16_t curpad)
         step  = 1, max = max_menu[view] -1;
     }
 
-    // check for bounds, eventually update value
+    // 2. check for bounds, eventually update value
     if(curpad & PAD_UP)
     {
         if((*value == 0 && col)
@@ -424,7 +460,7 @@ static void do_updown_action(uint16_t curpad)
     }
 
     if(flag)
-    {   // update selected color with updated single components
+    {   // 3. update selected color with updated single components
         if(col)
           *color = ARGB(c_comp[0], c_comp[1], c_comp[2], c_comp[3]);
 
@@ -500,14 +536,22 @@ static void do_menu_action(void)
             //sys_ppu_thread_exit(0);
 
             stop_VSH_Menu();
-            //sys_timer_sleep(1);
+            sys_timer_sleep(1);
             shutdown_reset(2);
             break;
           case 8:                  // "9: Shutdown PS3"
             delete_turnoff_flag();
             stop_VSH_Menu();
-            //sys_timer_sleep(1);
+            sys_timer_sleep(1);
             shutdown_reset(1);
+            break;
+          case 9: // Browse GAMES
+            {
+            view = 3;              // change menu view
+            line = 0;              // on start entry
+            if(!games)
+                games = ReadUserList(&gmc); // refresh list
+            }
             break;
         }
         break;
@@ -556,6 +600,12 @@ static void do_menu_action(void)
             break;
         }
         break;
+
+      case 3:                   // Browse GAMES view
+        if(games) // or gmc > 0
+            do_mount((games + line)->path);
+        break;
+
     }
 }
 
@@ -566,6 +616,9 @@ static void do_menu_action(void)
 static void do_back_action(void)
 {
     if(view) view = line = col = 0;
+
+    if(view == 0
+    && line == 9) do_umount();
 }
 
 
@@ -628,9 +681,9 @@ static void vsh_menu_thread(uint64_t arg)
 
                       start_stop_vsh_pad(0);                        // stop vsh pad
 
-                      startm = clock(), tick = 0;                   // reset counter
+                      startm = clock(), tick = 0;                   // reset fps counters
 
-                      menu_running = 1;     // set menu_running
+                      menu_running = 1;         // set menu_running
 
                       break;
 

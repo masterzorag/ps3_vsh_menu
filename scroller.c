@@ -68,7 +68,7 @@ void move_text(void)
         len = get_render_length(msg);
 
         #else
-        len = MSG_LEN * FONT_W;
+        len = strlen(msg) * FONT_W;
 
         #endif
     }

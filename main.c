@@ -96,7 +96,7 @@ static uint32_t menu_colors[4][4] __attribute__((aligned(16))) = {
     0x7F0000FF,     // blue, semitransparent
     0x70000000,     // black, semitransparent
     0x7F00FF00,     // green, semitransparent
-    0x7FAA0000
+    0xBB660088
 },
 {  // Fg_colors[1][0-3]
     0xFFB0B0B0,     // blue, opac
@@ -179,10 +179,9 @@ static void draw_frame(CellPadData *data)
     draw_stars();       // to keep them under text lines
     #endif
 
-    if(view != 1)
-        draw_png(0, 100, 104, 0, 0, 163, 296);
+    //if(view != 1)        draw_png(0, 100, 104, 0, 0, 163, 296);
 
-    // print all menu entries for view, and blink the current selected entry
+    /* print all menu entries for view, and blink the current selected entry */
     for(i = 0; i < max_menu[view]; i++)
     {
         uint32_t *tc = NULL;
@@ -204,7 +203,7 @@ static void draw_frame(CellPadData *data)
         {
             if(i < gmc )  // && gmc > 0
             {
-                strcpy(tmp_ln, (games + i)->title);
+                strcpy(tmp_ln, (games + i + stride)->title);
                 tx = get_aligned_x(tmp_ln, CENTER);
                 print_text(tx, ty, tmp_ln);
             }
@@ -234,7 +233,14 @@ static void draw_frame(CellPadData *data)
     }
     // we pass with default colors ready, per view
 
-    // print headline string, coordinates in canvas
+    if(1)
+    { // a debug string
+        sprintf(tmp_ln, "%p, gmc:%d i%d l%d stride:%d", games, gmc, i, line, stride);
+        tmp_ln[strlen(tmp_ln)] = '\0';
+        print_text(BORD_D, ty + 16, tmp_ln);
+    }
+
+    /* print headline string, coordinates in canvas */
     switch(view)
     {
       case 1:
@@ -255,8 +261,7 @@ static void draw_frame(CellPadData *data)
 
     // ...
 
-    // second view: Dump pad data
-    if(view == 1)
+    if(view == 1)  // Dump pad data view
     {   // used in text position
         uint16_t ty = 180;
         uint8_t x = 0;
@@ -288,7 +293,7 @@ static void draw_frame(CellPadData *data)
         }
 
     }
-    else if(view == 2)  // third view: Setup colors menu
+    else if(view == 2)  // Setup colors menu view
     {
         uint32_t *tc = NULL;
         uint8_t x, g;  // grounds
@@ -399,17 +404,17 @@ static void draw_frame(CellPadData *data)
 ***********************************************************************/
 static void stop_VSH_Menu(void)
 {
-    menu_running = 0;     // menu off
+    menu_running = 0;               // menu off
 
     #ifdef HAVE_SYS_FONT
-    font_finalize();      // unbind renderer and kill font-instance
+    font_finalize();                // unbind renderer and kill font-instance
     #endif
 
-    destroy_heap();       // free heap memory
+    destroy_heap();                 // free heap memory
 
-    games = NULL;         // set refresh flag for next init
+    games = NULL, stride = 0;       // set refresh flag for next init
 
-    rsx_fifo_pause(0);    // continue rsx rendering
+    rsx_fifo_pause(0);              // continue rsx rendering
 }
 
 
@@ -429,12 +434,13 @@ static void do_screenshot_action(void)
 static void do_updown_action(uint16_t curpad)
 {
     bool flag = 0;
-    uint8_t *value, step, max, c_comp[4];   // single color components
+    uint8_t  *value = NULL, step, max, c_comp[4];   // single color components
     uint32_t *color = NULL;
 
-    // 1. setup common bounds for selected ground color(col, line)
+    /* 1. setup variables, common bounds */
     if(col)
-    {   // A, R, G, B: 0x00-0xFF, no bound: can loop
+    {   // change selected color(col, line)
+        // A, R, G, B: 0x00-0xFF, no bound: can loop
         value = &c_comp[(col -1) %4];
         step  = -2, max = 0xFF;
         color = &menu_colors[(col -1) /4][line];
@@ -448,20 +454,29 @@ static void do_updown_action(uint16_t curpad)
         step  = 1, max = max_menu[view] -1;
     }
 
-    // 2. check for bounds, eventually update value
+    /* 2. check for bounds, eventually update value */
     if(curpad & PAD_UP)
     {
-        if((*value == 0 && col)
-         || *value >  0) { *value -= step, flag = 1; }
+        if( (*value == 0 && col)  // loop
+          || *value >  0)/* bound */{ *value -= step, flag = 1; }
+
+        else // deal with scrolling lines
+        if(*value == 0 && view == 3
+        && stride > 0) { stride--, flag = 1; }
     }
-    else   // & PAD_DOWN
+    else // & PAD_DOWN
     {
-        if((*value == max && col)
-         || *value <  max) { *value += step, flag = 1; }
+        if( (*value == max && col)  // loop
+          || *value <  max)/* bound */{ *value += step, flag = 1; }
+
+        else // deal with scrolling lines
+        if(*value == max && view == 3
+        && stride < gmc - max_menu[view]) { stride++, flag = 1; }
     }
 
+    /* 3. update and feedback */
     if(flag)
-    {   // 3. update selected color with updated single components
+    {   // selected color with updated single components
         if(col)
           *color = ARGB(c_comp[0], c_comp[1], c_comp[2], c_comp[3]);
 
@@ -547,12 +562,10 @@ static void do_menu_action(void)
             shutdown_reset(1);
             break;
           case 9: // Browse GAMES
-            {
             view = 3;              // change menu view
-            line = 0;              // on start entry
+            line = stride = 0;     // on start entry
             if(!games)
                 games = ReadUserList(&gmc); // refresh list
-            }
             break;
         }
         break;
@@ -604,7 +617,7 @@ static void do_menu_action(void)
 
       case 3:                   // Browse GAMES view
         if(games) // or gmc > 0
-            do_mount((games + line)->path);
+            do_mount((games + line + stride)->path);
         break;
 
     }

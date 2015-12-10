@@ -80,7 +80,7 @@ static uint32_t t1 = 0, t2 = 0;   // keep track of temperatures
 
 #include "games.h"
 struct game_entry *games = NULL;
-int gmc = 0;
+static int16_t gmc = 0, stride = 0;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -243,7 +243,8 @@ static void draw_frame(CellPadData *data)
         break;
 
       case 3:
-        strcpy(tmp_ln, "listing GAMES folder on HDD0");  // a fixed title
+        sprintf(tmp_ln, "listing %d folder GAMES on HDD0", gmc);  // a fixed title
+        tmp_ln[strlen(tmp_ln)] = '\0';
         break;
 
       default:

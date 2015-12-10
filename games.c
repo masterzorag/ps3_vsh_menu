@@ -40,9 +40,9 @@ static int parse_param_sfo(char *file, const char *field, char *title_name)
 
           if(!strcmp((char *) &mem[str], field))
           {
-            strncpy(title_name, (char *) &mem[pos], 63);
-            free(mem);
-            return 0;
+              strncpy(title_name, (char *) &mem[pos], 63);
+              free(mem);
+              return 0;
           }
           while (mem[str]) str++;
 
@@ -57,20 +57,19 @@ static int parse_param_sfo(char *file, const char *field, char *title_name)
 
 
 /* qsort struct comparison function (C-string field) */
-static int struct_cmp_by_path(const void *a, const void *b)
+static int struct_cmp_by_title(const void *a, const void *b)
 {
     struct game_entry *ia = (struct game_entry *)a;
     struct game_entry *ib = (struct game_entry *)b;
-    return strcmp(ia->path, ib->path);
+    return strcmp(ia->title, ib->title);
 /* strcmp functions works exactly as expected from comparison function */
 }
 
 
 int getDirListSize(const char *path)
 {
-    DIR *d;
     struct dirent *dir;
-    d = opendir(path);
+    DIR *d = opendir(path);
 
     if(d)
     {
@@ -89,7 +88,7 @@ int getDirListSize(const char *path)
 }
 
 
-struct game_entry *ReadUserList(int *gmc)
+struct game_entry *ReadUserList(short *gmc)
 {
     char *userPath = (char*)USERLIST_PATH;
 
@@ -108,7 +107,7 @@ struct game_entry *ReadUserList(int *gmc)
     if(d)
     {
         struct dirent *dir;
-        int cur_count = 0, err;
+        int cur_count = 0, err = 0;
         char fullPath[256], title[128];
 
         while((dir = readdir(d)) != NULL)
@@ -128,12 +127,9 @@ struct game_entry *ReadUserList(int *gmc)
                 char *p = NULL;
                 err = parse_param_sfo(fullPath, "TITLE", (char *)&title);
                 if(!err)
-                {
-                    printf("%d [%s]\n", err, title);
-                    p = (char *)&title; // store real title into name
-                }
+                    p = (char *)&title; // store real title
                 else
-                    p = dir->d_name;    // store folder path into name
+                    p = dir->d_name;    // store folder name
 
                 ret[cur_count].title = (char *)malloc(strlen(p) + 1);
                 strcpy(ret[cur_count].title, p);
@@ -143,7 +139,7 @@ struct game_entry *ReadUserList(int *gmc)
         closedir(d);
 
         /* resort using custom comparision function */
-        qsort(ret, cur_count, sizeof(struct game_entry), struct_cmp_by_path);
+        qsort(ret, cur_count, sizeof(struct game_entry), struct_cmp_by_title);
 
         return ret;
     }
@@ -182,8 +178,8 @@ void send_wm_request(char *cmd)
 
     if(conn_s >= 0)
     {
-      int res = send(conn_s, cmd, strlen(cmd), 0);
-      if(res < 0) return;
+        int res = send(conn_s, cmd, strlen(cmd), 0);
+        if(res < 0) return;
     }
     buzzer(1);  // feedback
 }

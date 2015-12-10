@@ -26,7 +26,7 @@ struct game_entry
 };
 
 int getDirListSize(const char *path);
-struct game_entry *ReadUserList(int *gmc);
+struct game_entry *ReadUserList(short *gmc);
 
 void send_wm_request(char *cmd);
 void do_mount(char *path);

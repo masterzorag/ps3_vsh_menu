@@ -17,8 +17,8 @@ typedef struct{
 // decoder context
 typedef struct{
 	CellPngDecMainHandle main_h;             // decoder
-	CellPngDecSubHandle sub_h;               // stream
-	Cb_Arg cb_arg;                           // callback arg
+	CellPngDecSubHandle  sub_h;              // stream
+	Cb_Arg               cb_arg;             // callback arg
 } png_dec_info;
 
 

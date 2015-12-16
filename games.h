@@ -22,7 +22,7 @@
 struct game_entry
 {
     char *title;        // array to store real Title
-    char *path;         // "/dev_hdd0/GAMES/BLES02161-[FIFA 16]"
+    char *path;         // "BLES02161-[FIFA 16]"
 };
 
 int getDirListSize(const char *path);

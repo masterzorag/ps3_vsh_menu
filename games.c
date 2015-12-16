@@ -185,6 +185,33 @@ void send_wm_request(char *cmd)
 }
 
 /***********************************************************************
+* wrapper to URL_encode a path
+***********************************************************************/
+static void url_encode(char *urlenc_path, char *path)
+{
+    const char *hex = "0123456789abcdef";
+    char *c = path, *dst = urlenc_path;
+
+    while(*c != '\0')
+    {
+        if(('a' <= *c && *c <= 'z')
+        || ('A' <= *c && *c <= 'Z')
+        || ('0' <= *c && *c <= '9'))
+        {
+            *dst++ = *c;            //putchar(*c);
+        }
+        else
+        {
+            *dst++ = '%';           // putchar('%');
+            *dst++ = hex[*c >> 4];  // putchar(hex[*c >> 4]);
+            *dst++ = hex[*c & 15];  // putchar(hex[*c & 15]);
+        }
+        c++;
+    }
+    *dst = '\0';
+}
+
+/***********************************************************************
 * wrapper to mount path
 ***********************************************************************/
 void do_mount(char *path)
@@ -192,9 +219,14 @@ void do_mount(char *path)
     char request[256];
     strcpy((char*)&request, "GET /mount.ps3");
 
-    // build full game path
     strcat((char*)&request, USERLIST_PATH);
-    strcat((char*)&request, path);
+
+    // http = no whitespaces, URL encode path
+    char urlenc_path[128];
+    url_encode((char*)&urlenc_path, path);
+
+    // append encoded path
+    strcat((char*)&request, (char*)&urlenc_path);
 
     send_wm_request((char*)&request);
 }
@@ -206,4 +238,3 @@ void do_umount(void)
 {
     send_wm_request((char*)"GET /mount_ps3/unmount");
 }
-

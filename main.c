@@ -24,6 +24,7 @@
 #include "mem.h"
 #include "blitting.h"
 
+
 #ifdef DEBUG
 #include "network.h"
 #endif
@@ -76,7 +77,7 @@ static clock_t startm, stopm;
 static uint16_t tick = 0;
 static double fps = 0;
 
-static uint32_t t1 = 0, t2 = 0;   // keep track of temperatures
+static uint32_t t1 = 0, t2 = 0; // keep track of temperatures
 
 #include "games.h"
 struct game_entry *games = NULL;
@@ -90,36 +91,15 @@ static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
-// Every view have its dedicated Bg/Fg/Fg2 color default combination
-static uint32_t menu_colors[4][4] __attribute__((aligned(16))) = {
-{   // Bg_colors[0][0-3]
-    0x7F0000FF,     // blue, semitransparent
-    0x70000000,     // black, semitransparent
-    0x7F00FF00,     // green, semitransparent
-    0xBB660088
-},
-{  // Fg_colors[1][0-3]
-    0xFFB0B0B0,     // blue, opac
-    0xFFA0A0A0,     // black, opac
-    0xFFFFFFFF,     // white, opac
-    0xFF9999FF
-},
-{   // Fg_2_colors[2] to use linear gradient color, foreach view [0-3]
-    0xFF600090,
-    0xFF6060A0,
-    0xFF303030,
-    0xFF6060A0
-},
-{   // unused at the moment
-    0xFF303030,     // shadows can be the same across view
-    0x00000000,
-    0x00000000,
-    0x00000000
-}
-};
+typedef struct
+{
+    uint32_t c[3];
+    uint8_t  max_lines;         // (256 lines are enough)
+    uint8_t  unused[3];
+} menu_palette_ctx
+__attribute__((aligned(16)));
 
-// max menu entries per view
-static int8_t max_menu[] = {10, 7, 3, 12};
+static menu_palette_ctx palette[4], *p = NULL; // different colors combination, per view
 
 // menu entry strings
 const char *entry_str[3][10] __attribute__((aligned(4))) = {
@@ -151,6 +131,28 @@ const char *entry_str[3][10] __attribute__((aligned(4))) = {
 }
 };
 
+static void init_menu_palette(void)
+{
+    p = &palette[0];       // Default view
+    p->c[0] = 0x7F0000FF,  // Background
+    p->c[1] = 0xFFB0B0B0,  // Foreground 1 (upper)
+    p->c[2] = 0xFF600090;  // Foreground 2 (lower)
+    p->max_lines = 10;     // max entries, then stride
+
+    p = &palette[1];       // Dump pad data
+    p->c[0] = 0x70000000,
+    p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0, p->max_lines = 7;
+
+    p = &palette[2];       // Setup Color
+    p->c[0] = 0x7F00FF00,
+    p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030, p->max_lines = 3;
+
+    p = &palette[3];       // Browse games
+    p->c[0] = 0xBB660088,
+    p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060A0, p->max_lines = 12;
+
+    // more view...
+}
 
 /***********************************************************************
 * draw a frame
@@ -165,24 +167,22 @@ static void draw_frame(CellPadData *data)
     uint32_t blink_color = (uint32_t)rand();
 
     // set the right colors for current view
-    #ifdef HAVE_PNG_FONT
-    set_foreground_color(menu_colors[1][view]);
-    #else
-    update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
-    #endif
+    p = &palette[view];
 
-    set_background_color(menu_colors[0][view]);
+    set_background_color(p->c[0]);
 
     draw_background();
 
-    #ifdef HAVE_STARFIELD
-    draw_stars();       // to keep them under text lines
+    #ifdef HAVE_PNG_FONT
+    set_foreground_color(p->c[1]);
+    #else
+    update_gradient(&p->c[1], &p->c[2]);
     #endif
 
     //if(view != 1)        draw_png(0, 100, 104, 0, 0, 163, 296);
 
     /* print all menu entries for view, and blink the current selected entry */
-    for(i = 0; i < max_menu[view]; i++)
+    for(i = 0; i < p->max_lines; i++)
     {
         uint32_t *tc = NULL;
         ty = 8 + ((FONT_H + FONT_D) * (i + 1));
@@ -201,7 +201,7 @@ static void draw_frame(CellPadData *data)
         // print menu lines
         if(view == 3)  // Browse GAMES view
         {
-            if(i < gmc )  // && gmc > 0
+            if(i < gmc ) // && gmc > 0
             {
                 strcpy(tmp_ln, (games + i + stride)->title);
                 tx = get_aligned_x(tmp_ln, CENTER);
@@ -209,25 +209,25 @@ static void draw_frame(CellPadData *data)
             }
             else
             {
-                if(!i)  // or gmc < 1, only once
+                if(!i) // or gmc < 1, (shortcut) only once on error
                 {
-                    sprintf(tmp_ln, "(EE) %.16p, %.2d", games, gmc);
+                    sprintf(tmp_ln, "(EE) 0x%p, %.2d", games, gmc);
                     tmp_ln[strlen(tmp_ln)] = '\0';
                     tx = get_aligned_x(tmp_ln, CENTER);
-                    print_text(BORD_D, ty, tmp_ln);
+                    print_text(tx, ty, tmp_ln);
                 }
             }
         }
         else // default
             print_text(BORD_D, ty, entry_str[view][i]);
 
-        // (re)set back if just draw selected line
+        // (re)set back color, if just draw selected line!
         if(tc)
         {
             #ifdef HAVE_PNG_FONT
-            set_foreground_color(menu_colors[1][view]);
+            set_foreground_color(p->c[1]);
             #else
-            update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
+            update_gradient(&p->c[1], &p->c[2]);
             #endif
         }
     }
@@ -245,12 +245,11 @@ static void draw_frame(CellPadData *data)
     {
       case 1:
       case 2:
-        strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3));  // strip leading number
+        strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3 /*strip leading number*/ ));
         break;
 
       case 3:
         sprintf(tmp_ln, "listing %d folder GAMES on HDD0", gmc);  // a fixed title
-        tmp_ln[strlen(tmp_ln)] = '\0';
         break;
 
       default:
@@ -262,9 +261,9 @@ static void draw_frame(CellPadData *data)
     // ...
 
     if(view == 1)  // Dump pad data view
-    {   // used in text position
-        uint16_t ty = 180;
-        uint8_t x = 0;
+    {
+        uint16_t ty = 180;  // used in text position
+        uint8_t  x  = 0;
 
         sprintf(tmp_ln, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
         tx = get_aligned_x(tmp_ln, CENTER);
@@ -285,7 +284,7 @@ static void draw_frame(CellPadData *data)
             {   // overwrite last ':' with terminator
                 tmp_ln[x -1] = '\0';
                 if(tx == 0)
-                    tx = get_aligned_x(tmp_ln, CENTER);   // only once
+                    tx = get_aligned_x(tmp_ln, CENTER); // only once
 
                 print_text(tx, ty, tmp_ln);
                 x = 0, ty += (FONT_H + FONT_D);      // additional px to next line
@@ -301,27 +300,25 @@ static void draw_frame(CellPadData *data)
         // print all color entries: Bg, Fg, Fg2, per line
         for(g = 0; g < 3; g++)  // grounds as coloumns
         {
-            tx = 180 + ((8 + 1 /* chars of distance */) * FONT_W) * g;
-            // first 3 lines/view: 0-2
-            for(i = 0; i < 3; i++)
+            tx = 180 + ((8 + 1 /*chars of distance*/) * FONT_W) * g;
+
+            for(i = 0; i < 3; i++) // first 3 lines/view: 0-2
             {
                 ty = 8 + ((FONT_H + FONT_D) * (i + 1));
-
-                tc = &menu_colors[g][i];
+                tc = &palette[i].c[g];    // address the temp color
 
                 #ifdef HAVE_PNG_FONT
                 set_foreground_color(*tc);
                 #else
-                update_gradient(tc, &menu_colors[2][i]);  // fade to: selected Fg2 or same color?
+                update_gradient(tc, &palette[i].c[2]); // fade to: selected Fg2 or same color?
                 #endif
 
                 sprintf(tmp_ln, "%.8X", *tc);        // print color
-
                 print_text(tx, ty, tmp_ln);
 
                 if(i == line                         // selected entry
                 && col > 0 
-                && (col -1) /4 /* ARGB */ == g)      // selected color component
+                && (col -1) /4 /*ARGB*/ == g)        // selected color component
                 {
                     tc = &blink_color;               // blink
 
@@ -340,14 +337,14 @@ static void draw_frame(CellPadData *data)
                         #ifdef HAVE_SYS_FONT
                         tmp_ln[x] = '\0';
                         add_x = get_render_length(tmp_ln);
-                        sprintf(tmp_ln, "%.8X", menu_colors[g][i]); // need to restore
+                        sprintf(tmp_ln, "%.8X", palette[i].c[g]); // need to restore value (cutted by terminating)
 
                         #elif HAVE_XBM_FONT
-                        add_x = (x * FONT_W);        // xbm_font is monospace
+                        add_x = (x * FONT_W);         // xbm_font is monospace
                         #endif
                     }
 
-                    // print current selected color component
+                    // terminate and print current selected color component
                     tmp_ln[x +2] = '\0';
                     print_text(tx + add_x, ty, &tmp_ln[x]);
                 }
@@ -359,9 +356,9 @@ static void draw_frame(CellPadData *data)
 
     // (re)set back after draw last line
     #ifdef HAVE_PNG_FONT
-    set_foreground_color(menu_colors[1][view]);
+    set_foreground_color(p->c[1]);
     #else
-    update_gradient(&menu_colors[1][view], &menu_colors[2][view]);
+    update_gradient(&p->c[1], &p->c[2]);
     #endif
 
     #ifdef HAVE_SSCROLLER
@@ -369,6 +366,7 @@ static void draw_frame(CellPadData *data)
     draw_text(330);
     move_text();
     #endif
+
 
     /* position footer info */
     ty = CANVAS_H - (FONT_H + FONT_D) - BORD_D - SHADOW_PX;  // additional px from bottom
@@ -443,7 +441,7 @@ static void do_updown_action(uint16_t curpad)
         // A, R, G, B: 0x00-0xFF, no bound: can loop
         value = &c_comp[(col -1) %4];
         step  = -2, max = 0xFF;
-        color = &menu_colors[(col -1) /4][line];
+        color = &palette[line].c[(col -1) /4];
 
         c_comp[0] = GET_A(*color), c_comp[1] = GET_R(*color),
         c_comp[2] = GET_G(*color), c_comp[3] = GET_B(*color);
@@ -451,7 +449,7 @@ static void do_updown_action(uint16_t curpad)
     else
     {   // line: 0-max_menu[view], bounded: can't loop
         value = (uint8_t*)&line;
-        step  = 1, max = max_menu[view] -1;
+        step  = 1, max = p->max_lines -1;
     }
 
     /* 2. check for bounds, eventually update value */
@@ -471,7 +469,7 @@ static void do_updown_action(uint16_t curpad)
 
         else // deal with scrolling lines
         if(*value == max && view == 3
-        && stride < gmc - max_menu[view]) { stride++, flag = 1; }
+        && stride < gmc - p->max_lines) { stride++, flag = 1; }
     }
 
     /* 3. update and feedback */
@@ -659,6 +657,8 @@ static void vsh_menu_thread(uint64_t arg)
     #ifdef HAVE_STARFIELD
     init_once(/* stars */);
     #endif
+
+    init_menu_palette();
 
     while(1)
     {

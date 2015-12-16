@@ -105,20 +105,22 @@ uint16_t get_render_length(const char *str);
 
 
 // graphic buffers
-typedef struct _Buffer{
+typedef struct _Buffer
+{
     uint32_t *addr;        // buffer address
     uint16_t  w;           // buffer width
     uint16_t  h;           // buffer height
-} Buffer
-__attribute__((aligned(8)));
+} Buffer;
+//__attribute__((aligned(16)));
 
 // drawing context
-typedef struct _DrawCtx{
+typedef struct _DrawCtx
+{
+    Buffer   png[PNG_MAX]; // bitmaps
     uint32_t *canvas;      // addr of canvas
     uint32_t *bg;          // addr of background backup
-//    MenuCtx  *color;       // addr of color setup, per view
 
-    uint32_t bg_color;     // background color  
+    uint32_t bg_color;     // background color
 
     #ifdef HAVE_SYS_FONT
     uint32_t *font_cache;  // addr of glyph bitmap cache buffer
@@ -133,7 +135,6 @@ typedef struct _DrawCtx{
     uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient [0-7]
     #endif
 
-    Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx
 __attribute__((aligned(16)));
 

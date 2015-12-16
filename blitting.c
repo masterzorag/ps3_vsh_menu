@@ -473,8 +473,8 @@ void init_graphic()
     font_init();
 
     #elif HAVE_PNG_FONT
-    Buffer font = load_png(PNG_FONT_PATH);  // load font png
-    ctx.font    = font.addr;
+    Buffer font  = load_png(PNG_FONT_PATH);  // load font png
+    ctx.font     = font.addr;
     ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     #endif
@@ -583,18 +583,9 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 ***********************************************************************/
 void draw_background()
 {
-    uint16_t tmp_x = 0, tmp_y = 0;
-    uint32_t i;
-
-    for(i = 0; i < CANVAS_W * CANVAS_H; i++)
+    for(uint32_t i = 0; i < CANVAS_W * CANVAS_H; i++)
     {
         ctx.canvas[i] = mix_color(ctx.bg[i], ctx.bg_color);
-
-        tmp_x++;
-        if(tmp_x == CANVAS_W)
-        {
-            tmp_x = 0, tmp_y++;
-        }
     }
 }
 
@@ -752,7 +743,8 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
 int32_t load_png_bitmap(const int32_t idx, const char *path)
 {
     if(idx > PNG_MAX) return -1;
-    ctx.png[idx] = load_png(path);
+    ctx.png[idx] = load_png(path);    // Buffer load_png(const char *file_path), check ret!
+
     return 0;
 }
 

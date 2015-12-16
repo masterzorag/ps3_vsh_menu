@@ -88,6 +88,7 @@ static int16_t gmc = 0, stride = 0;
 // BLITTING
 static bool   menu_running = 0; // vsh menu off(0) or on(1)
 static int8_t line = 0;         // current line into menu, init 0 (entry 1:)
+static int8_t linb = 1;         // current line backup
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
@@ -179,7 +180,33 @@ static void draw_frame(CellPadData *data)
     update_gradient(&p->c[1], &p->c[2]);
     #endif
 
-    //if(view != 1)        draw_png(0, 100, 104, 0, 0, 163, 296);
+    if(view == 3) // draw background from selected folder game
+    {
+        // build folder path
+        sprintf(tmp_ln, "%s%s", USERLIST_PATH, (games + line + stride)->path);
+        print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
+
+        strcat(tmp_ln, "/PS3_GAME/ICON0.PNG");        // icon path
+
+        bool flag = 1;
+        if(linb != (line + stride)) // load ICON0.PNG
+        {
+            linb = line + stride;//            mem_free(320 * 176 * 4);
+            if(load_png_bitmap(0, tmp_ln) != 0) flag = 0; // Buffer load_png(const char *file_path)
+
+            sys_timer_usleep(200 *1000); /* 200msec */
+        }
+
+        if(flag)
+            draw_png(0, 16, 16, 0, 0, 320, 176);
+
+    }
+    else // default
+    {
+        #ifdef HAVE_STARFIELD
+        draw_stars(); // now, just to keep them under text lines
+        #endif
+    }
 
     /* print all menu entries for view, and blink the current selected entry */
     for(i = 0; i < p->max_lines; i++)
@@ -231,13 +258,13 @@ static void draw_frame(CellPadData *data)
             #endif
         }
     }
-    // we pass with default colors ready, per view
+    // we ends with default colors ready, per view
 
-    if(1)
-    { // a debug string
-        sprintf(tmp_ln, "%p, gmc:%d i%d l%d stride:%d", games, gmc, i, line, stride);
-        tmp_ln[strlen(tmp_ln)] = '\0';
-        print_text(BORD_D, ty + 16, tmp_ln);
+    if(1) // a couple of debug strings
+    {
+        sprintf(tmp_ln, "0x%p, lb%d le%d stride:%d (%d) %db", games, linb, line, stride, (line + stride), sizeof(menu_palette_ctx));
+        print_text(BORD_D, ty + (FONT_H + FONT_D) *2, tmp_ln);
+
     }
 
     /* print headline string, coordinates in canvas */
@@ -562,6 +589,7 @@ static void do_menu_action(void)
           case 9: // Browse GAMES
             view = 3;              // change menu view
             line = stride = 0;     // on start entry
+            linb = 1;              // flag for icon loading
             if(!games)
                 games = ReadUserList(&gmc); // refresh list
             break;

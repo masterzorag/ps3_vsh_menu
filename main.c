@@ -170,10 +170,6 @@ static void draw_frame(CellPadData *data)
     // set the right colors for current view
     p = &palette[view];
 
-    set_background_color(p->c[0]);
-
-    draw_background();
-
     #ifdef HAVE_PNG_FONT
     set_foreground_color(p->c[1]);
     #else
@@ -198,11 +194,13 @@ static void draw_frame(CellPadData *data)
         }
 
         if(flag)
-            draw_png(0, 16, 16, 0, 0, 320, 176);
-
+            draw_png_2x(0, 20, 16, 0, 0, 320, 176);
     }
     else // default
     {
+        set_background_color(p->c[0]);
+        draw_background();
+
         #ifdef HAVE_STARFIELD
         draw_stars(); // now, just to keep them under text lines
         #endif

@@ -181,30 +181,36 @@ static void draw_frame(CellPadData *data)
     update_gradient(&p->c[1], &p->c[2]);
     #endif
 
-    if(view == 3) // draw background from selected folder game
+    /* background */
+    set_background_color(p->c[0]);
+
+    if(view == 3 // draw background from selected folder game icon
+    && gmc)
     {
         // build folder path
         sprintf(tmp_ln, "%s%s", USERLIST_PATH, (games + line + stride)->path);
-        print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
 
-        strcat(tmp_ln, "/PS3_GAME/ICON0.PNG");        // icon path
+        strcat(tmp_ln, "/PS3_GAME/ICON0.PNG"); // icon path
 
         bool flag = 1;
         if(linb != (line + stride)) // load ICON0.PNG
         {
-            linb = line + stride;//            mem_free(320 * 176 * 4);
+            linb = line + stride;
             if(load_png_bitmap(0, tmp_ln) != 0) flag = 0; // Buffer load_png(const char *file_path)
 
-            sys_timer_usleep(200 *1000); /* 200msec */
+            sys_timer_usleep(250 *1000); /* 250msec */
         }
 
         if(flag)
             draw_png_2x(0, 20, 16, 0, 0, 320, 176);
+
+        blend_canvas();
+
+        print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
     }
     else // default
     {
-        set_background_color(p->c[0]);
-        draw_background();
+        draw_background(); // alpha-blended background
 
         #ifdef HAVE_STARFIELD
         draw_stars(); // now, just to keep them under text lines
@@ -286,7 +292,8 @@ static void draw_frame(CellPadData *data)
         strcpy(tmp_ln, "PS3 VSH Menu");
         break;
     }
-    print_text(BORD_D, BORD_D, tmp_ln);  // from upper-left, minimum border
+    tx = get_aligned_x(tmp_ln, CENTER); // center over width
+    print_text(tx, BORD_D, tmp_ln);     // minimum border from top
 
     // ...
 

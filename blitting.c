@@ -581,7 +581,7 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 /***********************************************************************
 * draw background, with current background color
 ***********************************************************************/
-void draw_background()
+void draw_background(void)
 {
     for(uint32_t i = 0; i < CANVAS_W * CANVAS_H; i++)
     {
@@ -589,6 +589,17 @@ void draw_background()
     }
 }
 
+/***********************************************************************
+* apply alpha-blended background color to canvas
+***********************************************************************/
+void blend_canvas(void)
+{
+    uint32_t *px = &ctx.canvas[0];
+    for(uint32_t i = 0; i < CANVAS_W * CANVAS_H; i++)
+    {
+        *px = mix_color(*px, ctx.bg_color); px++;
+    }
+}
 
 /***********************************************************************
 * compute x to align text into canvas

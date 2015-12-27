@@ -146,6 +146,7 @@ void pause_RSX_rendering(void);
 void set_background_color(uint32_t color);
 
 void draw_background(void);
+void blend_canvas(void);
 
 int32_t load_png_bitmap(const int32_t idx, const char *path);
 

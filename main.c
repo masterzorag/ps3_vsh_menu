@@ -100,7 +100,9 @@ typedef struct
 } menu_palette_ctx
 __attribute__((aligned(16)));
 
-static menu_palette_ctx palette[4], *p = NULL; // different colors combination, per view
+#define VIEWS 4
+
+static menu_palette_ctx palette[VIEWS], *p = NULL; // different colors combination, per view
 
 // menu entry strings
 const char *entry_str[3][10] __attribute__((aligned(4))) = {
@@ -129,28 +131,31 @@ const char *entry_str[3][10] __attribute__((aligned(4))) = {
     "1:bg,fg,f2",
     "2:bg,fg,f2",
     "3:bg,fg,f2",
+    "4:bg,fg,f2"
 }
 };
 
 static void init_menu_palette(void)
 {
+    memset(&palette, 0, sizeof(menu_palette_ctx) * VIEWS);
+
     p = &palette[0];       // Default view
+    p->max_lines = 10,     // max entries, then stride
     p->c[0] = 0x7F0000FF,  // Background
     p->c[1] = 0xFFB0B0B0,  // Foreground 1 (upper)
     p->c[2] = 0xFF600090;  // Foreground 2 (lower)
-    p->max_lines = 10;     // max entries, then stride
 
     p = &palette[1];       // Dump pad data
-    p->c[0] = 0x70000000,
-    p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0, p->max_lines = 7;
+    p->max_lines = 7,
+    p->c[0] = 0x70000000, p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0;
 
     p = &palette[2];       // Setup Color
-    p->c[0] = 0x7F00FF00,
-    p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030, p->max_lines = 3;
+    p->max_lines = 4,
+    p->c[0] = 0x7F00FF00, p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030;
 
     p = &palette[3];       // Browse games
-    p->c[0] = 0xBB660088,
-    p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060A0, p->max_lines = 12;
+    p->max_lines = 12,
+    p->c[0] = 0xBB660088, p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060A0;
 
     // more view...
 }
@@ -327,7 +332,7 @@ static void draw_frame(CellPadData *data)
         {
             tx = 180 + ((8 + 1 /*chars of distance*/) * FONT_W) * g;
 
-            for(i = 0; i < 3; i++) // first 3 lines/view: 0-2
+            for(i = 0; i < VIEWS; i++) // first 4 lines: view[0-3]
             {
                 ty = 8 + ((FONT_H + FONT_D) * (i + 1));
                 tc = &palette[i].c[g];    // address the temp color
@@ -513,8 +518,8 @@ static void do_updown_action(uint16_t curpad)
 ***********************************************************************/
 static void do_leftright_action(uint16_t curpad)
 {
-  if((view == 2)    // only on third view
-  && (line < 3))    // only for 3 colors, Bg, Fg, Fg2
+  if((view == 2)     // only on third view
+  && (line < VIEWS)) // only for all color palettes
   {
       bool flag = 0;
       if(curpad & PAD_LEFT)

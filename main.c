@@ -597,11 +597,14 @@ static void do_menu_action(void)
             shutdown_reset(1);
             break;
           case 9: // Browse GAMES
-            view = 3;              // change menu view
-            line = stride = 0;     // on start entry
-            linb = 1;              // flag for icon loading
             if(!games)
                 games = ReadUserList(&gmc); // refresh list
+            if(gmc)
+            {
+                view = 3;          // change menu view
+                line = stride = 0; // on start entry
+                linb = 1;          // flag for icon loading
+            }
             break;
         }
         break;

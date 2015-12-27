@@ -5,7 +5,7 @@
 #include "network.h"              // debug
 #include "misc.h"                 // for buzzer() only
 
-static int32_t png_w = 0, png_h = 0;
+static uint32_t png_w = 0, png_h = 0;
 
 
 static int32_t create_decoder(png_dec_info *dec_ctx);

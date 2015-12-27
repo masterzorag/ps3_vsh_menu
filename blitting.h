@@ -108,8 +108,8 @@ uint16_t get_render_length(const char *str);
 typedef struct _Buffer
 {
     uint32_t *addr;        // buffer address
-    uint16_t  w;           // buffer width
-    uint16_t  h;           // buffer height
+    uint32_t  w;           // buffer width
+    uint32_t  h;           // buffer height
 } Buffer;
 //__attribute__((aligned(16)));
 

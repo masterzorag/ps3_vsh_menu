@@ -166,7 +166,7 @@ static void init_menu_palette(void)
 static void draw_frame(CellPadData *data)
 {
     char tmp_ln[8 * (4 + 1)] __attribute__((aligned(16)));
-    uint16_t tx, ty;
+    uint16_t tx, ty; // text coordinates
     int8_t i;
 
     /* all 32bit colors are ARGB, the framebuffer format */
@@ -299,7 +299,7 @@ static void draw_frame(CellPadData *data)
 
     if(view == 1)  // Dump pad data view
     {
-        uint16_t ty = 180;  // used in text position
+        ty = 180;
         uint8_t  x  = 0;
 
         sprintf(tmp_ln, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
@@ -324,7 +324,7 @@ static void draw_frame(CellPadData *data)
                     tx = get_aligned_x(tmp_ln, CENTER); // only once
 
                 print_text(tx, ty, tmp_ln);
-                x = 0, ty += (FONT_H + FONT_D);      // additional px to next line
+                x = 0, ty += (FONT_H + FONT_D); // additional px to next line
             }
         }
 
@@ -469,7 +469,7 @@ static void do_screenshot_action(void)
 static void do_updown_action(uint16_t curpad)
 {
     bool flag = 0;
-    uint8_t  *value = NULL, step, max, c_comp[4];   // single color components
+    uint8_t  *value = NULL, step, max, c_comp[4]; // single color components
     uint32_t *color = NULL;
 
     /* 1. setup variables, common bounds */

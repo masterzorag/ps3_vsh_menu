@@ -2,7 +2,10 @@
 #include "mem.h"
 #include "inc/vsh_exports.h"
 
-#include "network.h"              // debug
+#ifdef DEBUG
+#include "network.h"
+#endif
+
 #include "misc.h"                 // for buzzer() only
 
 static uint32_t png_w = 0, png_h = 0;
@@ -85,7 +88,7 @@ static int32_t set_dec_param(png_dec_info *dec_ctx)
     png_w = info.imageWidth;
     png_h = info.imageHeight;
 
-    /*
+    #ifdef DEBUG
     dbg_printf("\nimageWidth:       %d\n"
                "imageHeight:      %d\n"
                "numComponents:    0x%08X\n"
@@ -95,7 +98,7 @@ static int32_t set_dec_param(png_dec_info *dec_ctx)
                "chunkInformation: 0x%08X\n\n",
                info.imageWidth, info.imageHeight, info.numComponents,
                info.colorSpace, info.bitDepth, info.interlaceMethod, info.chunkInformation);
-*/
+    #endif
 
     // set decoder parameter
     in.commandPtr        = NULL;

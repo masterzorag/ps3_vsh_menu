@@ -13,11 +13,9 @@
 #include "inc/vsh_exports.h"
 #include "network.h"
 
-
+#include "misc.h" // for buzzer()
 
 static int db_s = -1;											 // debug socket 
-
-
 
 
 /***********************************************************************
@@ -25,6 +23,9 @@ static int db_s = -1;											 // debug socket
 * 	char *ip      = string ip adresse
 * 	uint16_t port = port
 * 	uint8_t pro   = protokoll, udp = 1 or tcp = 2
+*
+* then receive with:
+* socat -u udp-recv:9999 -
 ***********************************************************************/
 int32_t create_conn(const char *ip, uint16_t port, uint8_t pro)
 {
@@ -61,6 +62,8 @@ int32_t create_conn(const char *ip, uint16_t port, uint8_t pro)
 		return -1;
 	}
 	
+  buzzer(2); // feedback
+
 	return s;
 }
 
@@ -128,12 +131,4 @@ void dbg_printf(const char* fmt, ...)
   va_end(arg);
   send(db_s, buf, strlen(buf), 0);
 }
-
-
-
-
-
-
-
-
 

@@ -119,7 +119,7 @@ const char *entry_str[3][10] __attribute__((aligned(4))) = {
     "A: Browse GAMES"
 },
 {   // Dump pad data
-    "1: test",
+    "1: connect socket",
     "2: screenshot",
     "3: Alpha",
     "4: Red",
@@ -206,7 +206,12 @@ static void draw_frame(CellPadData *data)
 
         blend_canvas();
 
-        print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
+        #ifdef DEBUG
+        sprintf(tmp_ln, "%s v%s", (games + line + stride)->path, (games + line + stride)->version);
+        //print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
+        dbg_printf("%s\n", tmp_ln);
+        #endif
+
     }
     else // default
     {
@@ -272,8 +277,10 @@ static void draw_frame(CellPadData *data)
     if(1) // a couple of debug strings
     {
         sprintf(tmp_ln, "0x%p, lb%d le%d stride:%d (%d) %db", games, linb, line, stride, (line + stride), sizeof(menu_palette_ctx));
-        print_text(BORD_D, ty + (FONT_H + FONT_D) *2, tmp_ln);
-
+        //print_text(BORD_D, ty + (FONT_H + FONT_D) *2, tmp_ln);
+        #ifdef DEBUG
+        dbg_printf("%s\n", tmp_ln);
+        #endif
     }
 
     /* print headline string, coordinates in canvas */
@@ -302,7 +309,7 @@ static void draw_frame(CellPadData *data)
         ty = 180;
         uint8_t  x  = 0;
 
-        sprintf(tmp_ln, "*%p, %d bytes:", data, data->len * sizeof(uint16_t));
+        sprintf(tmp_ln, "0x%p, %d bytes:", data, data->len * sizeof(uint16_t));
         tx = get_aligned_x(tmp_ln, CENTER);
         print_text(tx, ty, tmp_ln);
 
@@ -612,7 +619,13 @@ static void do_menu_action(void)
       case 1:                   // second menu view
         switch(line)
         {
-          case 0:               // 1: Back to main view"
+          case 0:               // 1: Start UDP debug"
+            #ifdef DEBUG
+            //dbg_fini();
+            //dbg_init();
+            dbg_printf("program restart:\n");
+            //dbg_printf("%s:%s\n", DB_IP, DB_PORT);
+            #endif
             view = line = 0;
             break;
           case 1:               // 2: screenshot
@@ -680,17 +693,16 @@ static void do_back_action(void)
 ***********************************************************************/
 static void vsh_menu_thread(uint64_t arg)
 {
-    #ifdef DEBUG
-    dbg_init();
-    dbg_printf("programstart:\n");
-    #endif
-
     uint16_t oldpad = 0, curpad = 0;
     CellPadData pdata;
 
     // wait for XMB feedback
     sys_timer_sleep(13);
 
+    #ifdef DEBUG
+    dbg_init();
+    dbg_printf("programstart:\n");
+    #endif
     //vshtask_notify("sprx running...");
 
     play_rco_sound("system_plugin", "snd_trophy");
@@ -760,7 +772,7 @@ static void vsh_menu_thread(uint64_t arg)
           if(menu_running)
           {
                 #ifdef DEBUG
-                dbg_printf("%p\n", pdata);
+                dbg_printf("0x%p\n", (uint32_t*)&pdata);
                 #endif
 
                 draw_frame(&pdata);

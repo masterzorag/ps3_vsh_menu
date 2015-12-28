@@ -108,7 +108,7 @@ struct game_entry *ReadUserList(short *gmc)
     {
         struct dirent *dir;
         int cur_count = 0, err = 0;
-        char fullPath[256], title[128];
+        char fullPath[256], title[128], version[6];
 
         while((dir = readdir(d)) != NULL)
         {
@@ -134,6 +134,18 @@ struct game_entry *ReadUserList(short *gmc)
 
                 ret[cur_count].title = (char *)malloc(strlen(p) + 1); // store title
                 strcpy(ret[cur_count].title, p);
+
+                p = (char *)&version;
+                memset(p, 0, 6);
+                err = parse_param_sfo(fullPath, "VERSION", p);
+                if(!err)
+                {
+                    ret[cur_count].version = (char *)malloc(strlen(p) + 1); // store version
+                    strcpy(ret[cur_count].version, p);
+                }
+                else
+                    ret[cur_count].version = NULL;
+
                 cur_count++;
             }
         }

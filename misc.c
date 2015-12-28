@@ -186,6 +186,23 @@ void read_meminfo(char *data)
     sprintf(data, "freemem:%i/%ikb", meminfo.avail /1024, meminfo.total /1024);
 }
 
+/***********************************************************************
+* write a data to binary file, minimal error checking
+***********************************************************************/
+size_t write_bin(const char *path, const uint8_t *data, const size_t len)
+{
+    FILE *fd = fopen(path, "wb");
+    if(!fd)
+        return -1;
+
+    size_t written = fwrite(data, sizeof(uint8_t), len, fd);
+
+    fclose(fd);
+
+    if(written == len) buzzer(1); // feedback
+
+    return written;
+}
 
 /***********************************************************************
 * peek & poke
@@ -213,4 +230,3 @@ uint64_t lv1poke(uint64_t addr, uint64_t value)
     system_call_2(9, addr, value);
     return_to_user_prog(uint64_t);
 }
-

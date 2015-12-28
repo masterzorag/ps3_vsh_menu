@@ -57,4 +57,6 @@ uint64_t lv2poke(uint64_t addr, uint64_t value);
 uint64_t lv1peek(uint64_t addr);
 uint64_t lv1poke(uint64_t addr, uint64_t value);
 
+size_t write_bin(const char *path, const uint8_t *data, const size_t len);
+
 #endif // __MISC_H__

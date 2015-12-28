@@ -162,14 +162,31 @@ void screenshot(const uint8_t mode);
 uint16_t get_aligned_x(const char *str, const uint8_t alignment);
 int32_t print_text(int32_t x, int32_t y, const char *str);
 
+
+// menu views
+typedef struct menu_palette_ctx
+{
+    uint32_t c[3];
+    uint8_t  max_lines;       // (256 seems enough)
+    uint8_t  unused[3];
+} menu_palette_ctx
+__attribute__((aligned(16)));
+
+#define VIEWS 4               // how many different views
+void store_palette(menu_palette_ctx *data, size_t len);
+void init_menu_palette(menu_palette_ctx *palette);
+
+
 // primitives
 //void draw_pixel(int32_t x, int32_t y);
 //void draw_line(int32_t x, int32_t y, int32_t x2, int32_t y2);
 //void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 //void draw_circle(int32_t x_c, int32_t y_c, int32_t r);
 
+
 #ifdef HAVE_STARFIELD
 void draw_stars(void);
 #endif
+
 
 #endif // __BLITT_H__

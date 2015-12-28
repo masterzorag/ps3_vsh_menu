@@ -914,6 +914,54 @@ void screenshot(const uint8_t mode)
 }
 
 
+/***********************************************************************
+* a wrapper to write config file
+***********************************************************************/
+void store_palette(menu_palette_ctx *data, size_t len)
+{
+    const char *path = "/dev_hdd0/ps3_vsh_menu.cfg"; // CFG_FILE_PATH
+
+    write_bin(path, (uint8_t*)data, len);
+}
+/*
+ hexdump -C ps3_vsh_menu.cfg
+ (view)0000  7f 00 00 ff ff b0 b0 b0  ff 60 00 90 0a 00 00 00  |.........`......|
+ (view)0010  70 00 00 00 ff a0 a0 a0  ff 60 60 a0 07 00 00 00  |p........``.....|
+ (view)0020  7f 00 ff 00 ff ff ff ff  ff 30 30 30 05 00 00 00  |.........000....|
+ (view)0030  33 33 00 66 ff 99 99 ff  ff 60 60 d0 0c 00 00 00  |33.f.....``.....|
+*/
+
+
+/***********************************************************************
+* default init
+***********************************************************************/
+void init_menu_palette(menu_palette_ctx *palette)
+{
+    menu_palette_ctx *p = palette;
+    memset(p, 0, sizeof(menu_palette_ctx) * VIEWS);
+
+    p = palette;           // Default view
+    p->max_lines = 10,     // max entries, then stride
+    p->c[0] = 0x7F0000FF,  // Background
+    p->c[1] = 0xFFB0B0B0,  // Foreground 1 (upper)
+    p->c[2] = 0xFF600090;  // Foreground 2 (lower)
+
+    p = palette + 1;       // Dump pad data
+    p->max_lines = 7,
+    p->c[0] = 0x70000000, p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0;
+
+    p = palette + 2;       // Setup Color
+    p->max_lines = VIEWS +1,
+    p->c[0] = 0x7F00FF00, p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030;
+
+    // more view...
+
+    p = palette + (VIEWS -1); // Browse games
+    p->max_lines = 12,
+    p->c[0] = 0x33330066, p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060D0;
+}
+
+
 #ifdef HAVE_STARFIELD
 #include "starfield.h"
 void draw_stars()

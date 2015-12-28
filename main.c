@@ -92,16 +92,6 @@ static int8_t linb = 1;         // current line backup
 static int8_t view = 0;         // menu view, init 0 (main view)
 static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 
-typedef struct
-{
-    uint32_t c[3];
-    uint8_t  max_lines;         // (256 lines are enough)
-    uint8_t  unused[3];
-} menu_palette_ctx
-__attribute__((aligned(16)));
-
-#define VIEWS 4
-
 static menu_palette_ctx palette[VIEWS], *p = NULL; // different colors combination, per view
 
 // menu entry strings
@@ -131,34 +121,11 @@ const char *entry_str[3][10] __attribute__((aligned(4))) = {
     "1:bg,fg,f2",
     "2:bg,fg,f2",
     "3:bg,fg,f2",
-    "4:bg,fg,f2"
+    "4:bg,fg,f2",
+    "5:write config"
 }
 };
 
-static void init_menu_palette(void)
-{
-    memset(&palette, 0, sizeof(menu_palette_ctx) * VIEWS);
-
-    p = &palette[0];       // Default view
-    p->max_lines = 10,     // max entries, then stride
-    p->c[0] = 0x7F0000FF,  // Background
-    p->c[1] = 0xFFB0B0B0,  // Foreground 1 (upper)
-    p->c[2] = 0xFF600090;  // Foreground 2 (lower)
-
-    p = &palette[1];       // Dump pad data
-    p->max_lines = 7,
-    p->c[0] = 0x70000000, p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0;
-
-    p = &palette[2];       // Setup Color
-    p->max_lines = 4,
-    p->c[0] = 0x7F00FF00, p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030;
-
-    p = &palette[3];       // Browse games
-    p->max_lines = 12,
-    p->c[0] = 0xBB660088, p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060A0;
-
-    // more view...
-}
 
 /***********************************************************************
 * draw a frame
@@ -661,8 +628,8 @@ static void do_menu_action(void)
           case 3:               // "4: test string..."
             //...
             break;
-          case 4:               // "5: test string..."
-            //...
+          case 4:               // "5: write config"
+            store_palette((menu_palette_ctx*)&palette, sizeof(menu_palette_ctx) * VIEWS);
             break;
         }
         break;
@@ -711,7 +678,7 @@ static void vsh_menu_thread(uint64_t arg)
     init_once(/* stars */);
     #endif
 
-    init_menu_palette();
+    init_menu_palette((menu_palette_ctx*)&palette);
 
     while(1)
     {

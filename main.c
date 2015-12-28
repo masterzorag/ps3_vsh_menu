@@ -151,8 +151,7 @@ static void draw_frame(CellPadData *data)
     /* background */
     set_background_color(p->c[0]);
 
-    if(view == 3 // draw background from selected folder game icon
-    && gmc)
+    if(view == 3) // draw background from selected folder game icon
     {
         // build folder path
         sprintf(tmp_ln, "%s%s", USERLIST_PATH, (games + line + stride)->path);
@@ -573,7 +572,7 @@ static void do_menu_action(void)
           case 9: // Browse GAMES
             if(!games)
                 games = ReadUserList(&gmc); // refresh list
-            if(gmc)
+            if(games)
             {
                 view = 3;          // change menu view
                 line = stride = 0; // on start entry
@@ -635,8 +634,7 @@ static void do_menu_action(void)
         break;
 
       case 3:                   // Browse GAMES view
-        if(games) // or gmc > 0
-            do_mount((games + line + stride)->path);
+        do_mount((games + line + stride)->path);
         break;
 
     }

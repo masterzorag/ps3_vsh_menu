@@ -118,20 +118,21 @@ struct game_entry *ReadUserList(short *gmc)
                 // build full game path
                 sprintf(fullPath, "%s%s", userPath, dir->d_name);
 
-                ret[cur_count].path = (char *)malloc(strlen(dir->d_name) + 1);
+                ret[cur_count].path = (char *)malloc(strlen(dir->d_name) + 1); // store relative path
                 strcpy(ret[cur_count].path, dir->d_name);
 
-                // parse SFO(fullPath/PS3_GAME/PARAM.SFO) for real title
+                // parse PARAM.SFO for real title
                 strcat(fullPath, "/PS3_GAME/PARAM.SFO");
+
                 memset(title, 0, 128);
                 char *p = NULL;
                 err = parse_param_sfo(fullPath, "TITLE", (char *)&title);
                 if(!err)
-                    p = (char *)&title; // store real title
+                    p = (char *)&title; // address real title
                 else
-                    p = dir->d_name;    // store folder name
+                    p = dir->d_name;    // address folder name
 
-                ret[cur_count].title = (char *)malloc(strlen(p) + 1);
+                ret[cur_count].title = (char *)malloc(strlen(p) + 1); // store title
                 strcpy(ret[cur_count].title, p);
                 cur_count++;
             }

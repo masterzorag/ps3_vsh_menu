@@ -964,7 +964,7 @@ void init_menu_palette(menu_palette_ctx *palette)
 
 #ifdef HAVE_STARFIELD
 #include "starfield.h"
-void draw_stars()
+void draw_stars(void)
 {
     move_star((uint32_t*)ctx.canvas);
 }

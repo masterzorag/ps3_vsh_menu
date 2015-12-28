@@ -21,7 +21,7 @@
 
 struct game_entry
 {
-    char *title;        // array to store real Title
+    char *title;        // array to store real TITLE
     char *path;         // "BLES02161-[FIFA 16]"
 };
 

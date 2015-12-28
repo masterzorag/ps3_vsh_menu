@@ -1,6 +1,7 @@
 #ifndef __BLITT_H__
 #define __BLITT_H__
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -113,6 +114,7 @@ typedef struct _Buffer
 } Buffer;
 //__attribute__((aligned(16)));
 
+
 // drawing context
 typedef struct _DrawCtx
 {
@@ -154,6 +156,7 @@ int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const 
 int32_t draw_png_2x(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
 
 void screenshot(const uint8_t mode);
+
 
 // text
 #define LEFT      0   // useless

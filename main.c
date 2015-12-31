@@ -737,20 +737,20 @@ static void vsh_menu_thread(uint64_t arg)
                 sys_timer_usleep(300 *1000); /* 300msec */
             }
 
-
           // VSH Menu is running, draw menu / check pad
           if(menu_running)
           {
-                #ifdef DEBUG
-                dbg_printf("0x%p\n", (uint32_t*)&pdata);
-                #endif
-
                 draw_frame(&pdata);
 
                 flip_frame();
 
                 if(curpad != oldpad)
                 {
+                    #ifdef DEBUG
+                    dbg_printf("0x%p\n", (uint32_t*)&pdata);
+                    dbg_printf("0x%p, lb%d le%d stride:%d (%d) %db\n", games, linb, line, stride, (line + stride), sizeof(menu_palette_ctx));
+                    #endif
+
                     if(curpad & (PAD_UP | PAD_DOWN)) do_updown_action(curpad);
 
                     if(curpad & (PAD_LEFT | PAD_RIGHT)) do_leftright_action(curpad);

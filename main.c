@@ -153,31 +153,32 @@ static void draw_frame(CellPadData *data)
 
     if(view == 3) // draw background from selected folder game icon
     {
-        // build folder path
-        sprintf(tmp_ln, "%s%s", USERLIST_PATH, (games + line + stride)->path);
-
-        strcat(tmp_ln, "/PS3_GAME/ICON0.PNG"); // icon path
-
         bool flag = 1;
-        if(linb != (line + stride)) // load ICON0.PNG
+        if(linb != (line + stride)) // only on line change
         {
             linb = line + stride;
-            if(load_png_bitmap(0, tmp_ln) != 0) flag = 0; // Buffer load_png(const char *file_path)
 
-            sys_timer_usleep(250 *1000); /* 250msec */
+            // build folder path
+            sprintf(tmp_ln, "%s%s", USERLIST_PATH, (games + line + stride)->path);
+            strcat(tmp_ln, "/PS3_GAME/ICON0.PNG"); // icon path
+
+            if(load_png_bitmap(0, tmp_ln)) flag = 0; // load ICON0.PNG
+
+            #ifdef DEBUG
+            sprintf(tmp_ln, "%s v%s",
+                   (games + line + stride)->path,
+                   (games + line + stride)->version);
+            //print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
+            dbg_printf("%s\n", tmp_ln);
+            #endif
+
+            sys_timer_usleep(200 *1000); /* 200msec */
         }
 
         if(flag)
             draw_png_2x(0, 20, 16, 0, 0, 320, 176);
 
         blend_canvas();
-
-        #ifdef DEBUG
-        sprintf(tmp_ln, "%s v%s", (games + line + stride)->path, (games + line + stride)->version);
-        //print_text(BORD_D, (FONT_H + FONT_D) *16, tmp_ln);
-        dbg_printf("%s\n", tmp_ln);
-        #endif
-
     }
     else // default
     {
@@ -240,11 +241,11 @@ static void draw_frame(CellPadData *data)
     }
     // we ends with default colors ready, per view
 
-    if(1) // a couple of debug strings
+    if(0) // a couple of debug strings
     {
         sprintf(tmp_ln, "0x%p, lb%d le%d stride:%d (%d) %db", games, linb, line, stride, (line + stride), sizeof(menu_palette_ctx));
-        //print_text(BORD_D, ty + (FONT_H + FONT_D) *2, tmp_ln);
         #ifdef DEBUG
+        print_text(BORD_D, ty + (FONT_H + FONT_D) *2, tmp_ln);
         dbg_printf("%s\n", tmp_ln);
         #endif
     }

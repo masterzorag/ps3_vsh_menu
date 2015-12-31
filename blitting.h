@@ -153,7 +153,7 @@ void blend_canvas(void);
 int32_t load_png_bitmap(const int32_t idx, const char *path);
 
 int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
-int32_t draw_png_2x(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
+int32_t draw_png_2x(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const uint32_t w, const uint32_t h);
 
 void screenshot(const uint8_t mode);
 

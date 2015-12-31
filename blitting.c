@@ -797,9 +797,9 @@ int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const 
 int32_t draw_png_2x(const int32_t idx,
     const int32_t c_x, const int32_t c_y,   // coordinate into canvas
     const int32_t p_x, const int32_t p_y,   // coordinate into png
-    const int32_t w,   const int32_t h)     // original size of png part to blit
+    const uint32_t w, const uint32_t h)     // original size of png part to blit
 {
-    int32_t i, k;
+    uint32_t i, k;
     uint32_t *px = NULL, *src = NULL;
 
     for(i = 0; i < h; i++)
@@ -809,17 +809,25 @@ int32_t draw_png_2x(const int32_t idx,
             && (c_y + 2* i < CANVAS_H))
             {
                   src = &ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)];
-            /*    (   H     * CANVAS_W) +    W
+            /*
+                  copying src in four pixels: H * CANVAS_W + W
 
                   (2* H   ) * CANVAS_W) + 2* W,
                   (2* H   ) * CANVAS_W) + 2* W +1,
                   (2* H +1) * CANVAS_W) + 2* W,
-                  (2* H +1) * CANVAS_W) + 2* W +1,
-            */
+                  (2* H +1) * CANVAS_W) + 2* W +1
+
                   px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
                   px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k) +1];  *px = mix_color(*px, *src);
                   px = &ctx.canvas[(2* (c_y + i) +1) * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
                   px = &ctx.canvas[(2* (c_y + i) +1) * CANVAS_W + 2* (c_x + k) +1];  *px = mix_color(*px, *src);
+
+                  easily can become painting clockwise:
+            */    px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
+                  px++;                                                              *px = mix_color(*px, *src);
+                  px += CANVAS_W;                                                    *px = mix_color(*px, *src);
+                  px--;                                                              *px = mix_color(*px, *src);
+
             }
         }
 

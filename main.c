@@ -424,6 +424,10 @@ static void stop_VSH_Menu(void)
     games = NULL, stride = 0;       // set refresh flag for next init
 
     rsx_fifo_pause(0);              // continue rsx rendering
+
+    start_stop_vsh_pad(1);          // restart vsh pad
+
+    sys_timer_usleep(100000);
 }
 
 
@@ -556,10 +560,6 @@ static void do_menu_action(void)
             break;
           case 7:                  // "8: Reset PS3"
             delete_turnoff_flag();
-
-            //{system_call_3(379, 0x8201, NULL, 0);}
-            //sys_ppu_thread_exit(0);
-
             stop_VSH_Menu();
             sys_timer_sleep(1);
             shutdown_reset(2);
@@ -636,6 +636,8 @@ static void do_menu_action(void)
 
       case 3:                   // Browse GAMES view
         do_mount((games + line + stride)->path);
+        sys_timer_usleep(500 *1000); /* 500msec */
+        stop_VSH_Menu();
         break;
 
     }
@@ -650,7 +652,12 @@ static void do_back_action(void)
     if(view) view = line = col = 0;
 
     if(view == 0
-    && line == 9) do_umount();
+    && line == 9)
+    {
+        do_umount();
+        sys_timer_usleep(500 *1000); /* 500msec */
+        stop_VSH_Menu();
+    }
 }
 
 
@@ -669,7 +676,6 @@ static void vsh_menu_thread(uint64_t arg)
     dbg_init();
     dbg_printf("programstart:\n");
     #endif
-    //vshtask_notify("sprx running...");
 
     play_rco_sound("system_plugin", "snd_trophy");
 
@@ -723,8 +729,6 @@ static void vsh_menu_thread(uint64_t arg)
                     // VSH Menu is running, stop VSH Menu
                     case 1:
                       stop_VSH_Menu();
-
-                      start_stop_vsh_pad(1);    // restart vsh pad
 
                       break;
                 }
@@ -795,6 +799,10 @@ int32_t vsh_menu_start(uint64_t arg)
 static void vsh_menu_stop_thread(uint64_t arg)
 {
     done = 1;
+
+    if(menu_running) stop_VSH_Menu();
+
+    vshtask_notify("unloading");
 
     if(vsh_menu_tid != (sys_ppu_thread_t)-1)
     {

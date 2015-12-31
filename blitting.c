@@ -754,7 +754,10 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
 int32_t load_png_bitmap(const int32_t idx, const char *path)
 {
     if(idx > PNG_MAX) return -1;
-    ctx.png[idx] = load_png(path);    // Buffer load_png(const char *file_path), check ret!
+
+    mem_free(ctx.png[idx].w * ctx.png[idx].h * 4); // first run is zeroed
+
+    ctx.png[idx] = load_png(path);
 
     return 0;
 }

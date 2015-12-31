@@ -6,7 +6,7 @@
 #include "network.h"
 #endif
 
-#include "misc.h"                 // for buzzer() only
+//#include "misc.h"                 // for buzzer() only
 
 static uint32_t png_w = 0, png_h = 0;
 
@@ -43,6 +43,10 @@ static int32_t create_decoder(png_dec_info *dec_ctx)
     // create png decoder
     ret = PngDecCreate(&dec_ctx->main_h, &in, &out);
 
+    #ifdef DEBUG
+    dbg_printf("PngDecCreate\tret %d\n", ret);
+    #endif
+
     return ret;
 }
 
@@ -69,6 +73,10 @@ static int32_t open_png(png_dec_info *dec_ctx, const char *file_path)
     // open stream
     ret = PngDecOpen(dec_ctx->main_h, &dec_ctx->sub_h, &src, &info);
 
+    #ifdef DEBUG
+    dbg_printf("PngDecOpen %s \tret %d\n", file_path, ret);
+    #endif
+
     return ret;
 }
 
@@ -90,14 +98,14 @@ static int32_t set_dec_param(png_dec_info *dec_ctx)
 
     #ifdef DEBUG
     dbg_printf("\nimageWidth:       %d\n"
-               "imageHeight:      %d\n"
-               "numComponents:    0x%08X\n"
-               "colorSpace:       0x%08X\n"
-               "bitDepth:         0x%08X\n"
-               "interlaceMethod:  0x%08X\n"
-               "chunkInformation: 0x%08X\n\n",
-               info.imageWidth, info.imageHeight, info.numComponents,
-               info.colorSpace, info.bitDepth, info.interlaceMethod, info.chunkInformation);
+                 "imageHeight:      %d\n"
+                 "numComponents:    0x%08X\n"
+                 "colorSpace:       0x%08X\n"
+                 "bitDepth:         0x%08X\n"
+                 "interlaceMethod:  0x%08X\n"
+                 "chunkInformation: 0x%08X\n\n",
+                 info.imageWidth, info.imageHeight, info.numComponents,
+                 info.colorSpace, info.bitDepth, info.interlaceMethod, info.chunkInformation);
     #endif
 
     // set decoder parameter
@@ -121,6 +129,10 @@ static int32_t set_dec_param(png_dec_info *dec_ctx)
 
     ret = PngDecSetParameter(dec_ctx->main_h, dec_ctx->sub_h, &in, &out);
 
+    #ifdef DEBUG
+    dbg_printf("PngDecSetParameter\tret %d\n", ret);
+    #endif
+
     return ret;
 }
 
@@ -142,6 +154,10 @@ static int32_t decode_png_stream(png_dec_info *dec_ctx, void *buf)
     // decode png...
     ret = PngDecDecodeData(dec_ctx->main_h, dec_ctx->sub_h, out, &param, &info);
 
+    #ifdef DEBUG
+    dbg_printf("PngDecDecodeData\tret %d\n", ret);
+    #endif
+
     return ret;
 }
 
@@ -153,7 +169,13 @@ static void *cb_malloc(uint32_t size, void *cb_malloc_arg)
     Cb_Arg *arg;
     arg = (Cb_Arg *)cb_malloc_arg;
     arg->mallocCallCounts++;
-    return malloc(size);
+    void *ret = malloc(size);
+
+    #ifdef DEBUG
+    dbg_printf("arg->mallocCallCounts\t%.2d, size %d,\tret %p\n", arg->mallocCallCounts, size, ret);
+    #endif
+
+    return ret;
 }
 
 /***********************************************************************
@@ -164,7 +186,12 @@ static int32_t cb_free(void *ptr, void *cb_free_arg)
     Cb_Arg *arg;
     arg = (Cb_Arg *)cb_free_arg;
     arg->freeCallCounts++;
-    free(ptr);
+
+    #ifdef DEBUG
+    dbg_printf("arg->freeCallCounts\t%.2d, ptr %p\n", arg->freeCallCounts, ptr);
+    #endif
+
+    if(ptr) free(ptr);
     return 0;
 }
 
@@ -194,6 +221,10 @@ Buffer load_png(const char *file_path)
     // alloc target buffer
     buf_addr = mem_alloc(png_w * png_h * 4);
 
+    #ifdef DEBUG
+    dbg_printf("buf_addr %p\n", buf_addr);
+    #endif
+
     if(buf_addr)
     {
         // decode png stream, into target buffer
@@ -204,14 +235,18 @@ Buffer load_png(const char *file_path)
         tmp.w = png_w;
         tmp.h = png_h;
     }
-    else
-        buzzer(3); // err, not reached
 
     // close png stream
-    PngDecClose(dec_ctx.main_h, dec_ctx.sub_h);
+    ret = PngDecClose(dec_ctx.main_h, dec_ctx.sub_h);
+    #ifdef DEBUG
+    dbg_printf("PngDecClose\tret %d\n", ret);
+    #endif
 
     // destroy png decoder
-    PngDecDestroy(dec_ctx.main_h);
+    ret = PngDecDestroy(dec_ctx.main_h);
+    #ifdef DEBUG
+    dbg_printf("PngDecDestroy\tret %d\n", ret);
+    #endif
 
     return tmp;
 }

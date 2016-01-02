@@ -1,6 +1,7 @@
 #ifndef __BLITT_H__
 #define __BLITT_H__
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,20 +106,23 @@ uint16_t get_render_length(const char *str);
 
 
 // graphic buffers
-typedef struct _Buffer{
+typedef struct _Buffer
+{
     uint32_t *addr;        // buffer address
-    uint16_t  w;           // buffer width
-    uint16_t  h;           // buffer height
-} Buffer
-__attribute__((aligned(8)));
+    uint32_t  w;           // buffer width
+    uint32_t  h;           // buffer height
+} Buffer;
+//__attribute__((aligned(16)));
+
 
 // drawing context
-typedef struct _DrawCtx{
+typedef struct _DrawCtx
+{
+    Buffer   png[PNG_MAX]; // bitmaps
     uint32_t *canvas;      // addr of canvas
     uint32_t *bg;          // addr of background backup
-//    MenuCtx  *color;       // addr of color setup, per view
 
-    uint32_t bg_color;     // background color  
+    uint32_t bg_color;     // background color
 
     #ifdef HAVE_SYS_FONT
     uint32_t *font_cache;  // addr of glyph bitmap cache buffer
@@ -133,7 +137,6 @@ typedef struct _DrawCtx{
     uint32_t fading_color[LINEAR_GRADIENT_STEP];  // precomputed gradient [0-7]
     #endif
 
-    Buffer   png[PNG_MAX]; // bitmaps
 } DrawCtx
 __attribute__((aligned(16)));
 
@@ -145,11 +148,15 @@ void pause_RSX_rendering(void);
 void set_background_color(uint32_t color);
 
 void draw_background(void);
+void blend_canvas(void);
 
 int32_t load_png_bitmap(const int32_t idx, const char *path);
+
 int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const int32_t w, const int32_t h);
+int32_t draw_png_2x(const int32_t idx, const int32_t c_x, const int32_t c_y, const int32_t p_x, const int32_t p_y, const uint32_t w, const uint32_t h);
 
 void screenshot(const uint8_t mode);
+
 
 // text
 #define LEFT      0   // useless
@@ -158,14 +165,31 @@ void screenshot(const uint8_t mode);
 uint16_t get_aligned_x(const char *str, const uint8_t alignment);
 int32_t print_text(int32_t x, int32_t y, const char *str);
 
+
+// menu views
+typedef struct menu_palette_ctx
+{
+    uint32_t c[3];
+    uint8_t  max_lines;       // (256 seems enough)
+    uint8_t  unused[3];
+} menu_palette_ctx
+__attribute__((aligned(16)));
+
+#define VIEWS 4               // how many different views
+void store_palette(menu_palette_ctx *data, size_t len);
+void init_menu_palette(menu_palette_ctx *palette);
+
+
 // primitives
 //void draw_pixel(int32_t x, int32_t y);
 //void draw_line(int32_t x, int32_t y, int32_t x2, int32_t y2);
 //void draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 //void draw_circle(int32_t x_c, int32_t y_c, int32_t r);
 
+
 #ifdef HAVE_STARFIELD
 void draw_stars(void);
 #endif
+
 
 #endif // __BLITT_H__

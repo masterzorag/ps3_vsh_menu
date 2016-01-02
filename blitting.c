@@ -473,8 +473,8 @@ void init_graphic()
     font_init();
 
     #elif HAVE_PNG_FONT
-    Buffer font = load_png(PNG_FONT_PATH);  // load font png
-    ctx.font    = font.addr;
+    Buffer font  = load_png(PNG_FONT_PATH);  // load font png
+    ctx.font     = font.addr;
     ctx.fg_color = 0xFFFFFFFF;          // white, opaque
 
     #endif
@@ -581,23 +581,25 @@ void update_gradient(const uint32_t *a, const uint32_t *b)
 /***********************************************************************
 * draw background, with current background color
 ***********************************************************************/
-void draw_background()
+void draw_background(void)
 {
-    uint16_t tmp_x = 0, tmp_y = 0;
-    uint32_t i;
-
-    for(i = 0; i < CANVAS_W * CANVAS_H; i++)
+    for(uint32_t i = 0; i < CANVAS_W * CANVAS_H; i++)
     {
         ctx.canvas[i] = mix_color(ctx.bg[i], ctx.bg_color);
-
-        tmp_x++;
-        if(tmp_x == CANVAS_W)
-        {
-            tmp_x = 0, tmp_y++;
-        }
     }
 }
 
+/***********************************************************************
+* apply alpha-blended background color to canvas
+***********************************************************************/
+void blend_canvas(void)
+{
+    uint32_t *px = &ctx.canvas[0];
+    for(uint32_t i = 0; i < CANVAS_W * CANVAS_H; i++)
+    {
+        *px = mix_color(*px, ctx.bg_color); px++;
+    }
+}
 
 /***********************************************************************
 * compute x to align text into canvas
@@ -752,7 +754,11 @@ int32_t print_text(int32_t x, int32_t y, const char *str)
 int32_t load_png_bitmap(const int32_t idx, const char *path)
 {
     if(idx > PNG_MAX) return -1;
+
+    mem_free(ctx.png[idx].w * ctx.png[idx].h * 4); // first run is zeroed
+
     ctx.png[idx] = load_png(path);
+
     return 0;
 }
 
@@ -787,6 +793,46 @@ int32_t draw_png(const int32_t idx, const int32_t c_x, const int32_t c_y, const 
     return (c_x + w);
 }
 
+/* Simple 2x scale factor variant */
+int32_t draw_png_2x(const int32_t idx,
+    const int32_t c_x, const int32_t c_y,   // coordinate into canvas
+    const int32_t p_x, const int32_t p_y,   // coordinate into png
+    const uint32_t w, const uint32_t h)     // original size of png part to blit
+{
+    uint32_t i, k;
+    uint32_t *px = NULL, *src = NULL;
+
+    for(i = 0; i < h; i++)
+        for(k = 0; k < w; k++)
+        {
+            if((c_x + 2* k < CANVAS_W)
+            && (c_y + 2* i < CANVAS_H))
+            {
+                  src = &ctx.png[idx].addr[(p_x + p_y * ctx.png[idx].w) + (k + i * ctx.png[idx].w)];
+            /*
+                  copying src in four pixels: H * CANVAS_W + W
+
+                  (2* H   ) * CANVAS_W) + 2* W,
+                  (2* H   ) * CANVAS_W) + 2* W +1,
+                  (2* H +1) * CANVAS_W) + 2* W,
+                  (2* H +1) * CANVAS_W) + 2* W +1
+
+                  px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
+                  px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k) +1];  *px = mix_color(*px, *src);
+                  px = &ctx.canvas[(2* (c_y + i) +1) * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
+                  px = &ctx.canvas[(2* (c_y + i) +1) * CANVAS_W + 2* (c_x + k) +1];  *px = mix_color(*px, *src);
+
+                  easily can become painting clockwise:
+            */    px = &ctx.canvas[ 2* (c_y + i)     * CANVAS_W + 2* (c_x + k)   ];  *px = mix_color(*px, *src);
+                  px++;                                                              *px = mix_color(*px, *src);
+                  px += CANVAS_W;                                                    *px = mix_color(*px, *src);
+                  px--;                                                              *px = mix_color(*px, *src);
+
+            }
+        }
+
+    return (c_x + 2* w);
+}
 
 /***********************************************************************
 * xmb screenshot
@@ -879,9 +925,57 @@ void screenshot(const uint8_t mode)
 }
 
 
+/***********************************************************************
+* a wrapper to write config file
+***********************************************************************/
+void store_palette(menu_palette_ctx *data, size_t len)
+{
+    const char *path = "/dev_hdd0/ps3_vsh_menu.cfg"; // CFG_FILE_PATH
+
+    write_bin(path, (uint8_t*)data, len);
+}
+/*
+ hexdump -C ps3_vsh_menu.cfg
+ (view)0000  7f 00 00 ff ff b0 b0 b0  ff 60 00 90 0a 00 00 00  |.........`......|
+ (view)0010  70 00 00 00 ff a0 a0 a0  ff 60 60 a0 07 00 00 00  |p........``.....|
+ (view)0020  7f 00 ff 00 ff ff ff ff  ff 30 30 30 05 00 00 00  |.........000....|
+ (view)0030  33 33 00 66 ff 99 99 ff  ff 60 60 d0 0c 00 00 00  |33.f.....``.....|
+*/
+
+
+/***********************************************************************
+* default init
+***********************************************************************/
+void init_menu_palette(menu_palette_ctx *palette)
+{
+    menu_palette_ctx *p = palette;
+    memset(p, 0, sizeof(menu_palette_ctx) * VIEWS);
+
+    p = palette;           // Default view
+    p->max_lines = 10,     // max entries, then stride
+    p->c[0] = 0x7F0000FF,  // Background
+    p->c[1] = 0xFFB0B0B0,  // Foreground 1 (upper)
+    p->c[2] = 0xFF600090;  // Foreground 2 (lower)
+
+    p = palette + 1;       // Dump pad data
+    p->max_lines = 7,
+    p->c[0] = 0x70000000, p->c[1] = 0xFFA0A0A0, p->c[2] = 0xFF6060A0;
+
+    p = palette + 2;       // Setup Color
+    p->max_lines = VIEWS +1,
+    p->c[0] = 0x7F00FF00, p->c[1] = 0xFFFFFFFF, p->c[2] = 0xFF303030;
+
+    // more view...
+
+    p = palette + (VIEWS -1); // Browse games
+    p->max_lines = 12,
+    p->c[0] = 0x33330066, p->c[1] = 0xFF9999FF, p->c[2] = 0xFF6060D0;
+}
+
+
 #ifdef HAVE_STARFIELD
 #include "starfield.h"
-void draw_stars()
+void draw_stars(void)
 {
     move_star((uint32_t*)ctx.canvas);
 }

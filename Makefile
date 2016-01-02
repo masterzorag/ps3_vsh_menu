@@ -9,7 +9,7 @@ CRT_TAIL += $(shell ppu-lv2-gcc -print-file-name'='crtend.o)
 CRT_HEAD += $(shell ppu-lv2-gcc -print-file-name'='ecrtn.o)
 
 
-PPU_SRCS  = mem.c misc.c png_dec.c blitting.c main.c
+PPU_SRCS  = mem.c misc.c png_dec.c blitting.c games.c main.c
 
 PPU_INCDIRS = -I ./inc
 PPU_PRX_TARGET = ps3_vsh_menu.prx
@@ -53,9 +53,9 @@ PPU_PRX_LDLIBS += -lnet_stub
 
 
 #_Font_implementation:
-#PPU_CFLAGS += -DHAVE_SYS_FONT
+PPU_CFLAGS += -DHAVE_SYS_FONT
 #PPU_CFLAGS += -DHAVE_PNG_FONT
-PPU_CFLAGS += -DHAVE_XBM_FONT
+#PPU_CFLAGS += -DHAVE_XBM_FONT
 
 
 #_Extras:

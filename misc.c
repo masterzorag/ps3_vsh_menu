@@ -187,7 +187,7 @@ void read_meminfo(char *data)
 }
 
 /***********************************************************************
-* write a data to binary file, minimal error checking
+* write data to binary file, minimal error checking
 ***********************************************************************/
 size_t write_bin(const char *path, const uint8_t *data, const size_t len)
 {

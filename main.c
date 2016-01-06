@@ -95,18 +95,19 @@ static int8_t col  = 0;         // current coloumn into menu, init 0 (entry 1:)
 static menu_palette_ctx palette[VIEWS], *p = NULL; // different colors combination, per view
 
 // menu entry strings
-const char *entry_str[3][10] __attribute__((aligned(4))) = {
+const char *entry_str[4][9] __attribute__((aligned(4))) = {
 {
-    "1: Make a single beep",
+    "1: Browse GAMES",
     "2: Make a double beep",
     "3: Dump pad data",
     "4: Setup colors menu",
     "5: Play trophy sound",
     "6: Make screenshot",
     "7: Make screenshot with Menu",
-    "8: Reset PS3",
-    "9: Shutdown PS3",
-    "A: Browse GAMES"
+    "8: Shutdown PS3",
+    "9: Reset PS3"
+},
+{   // GAMES
 },
 {   // Dump pad data
     "1: connect socket",
@@ -151,7 +152,7 @@ static void draw_frame(CellPadData *data)
     /* background */
     set_background_color(p->c[0]);
 
-    if(view == 3) // draw background from selected folder game icon
+    if(view == 1) // draw background from selected folder game icon
     {
         bool flag = 1;
         if(linb != (line + stride)) // only on line change
@@ -180,7 +181,7 @@ static void draw_frame(CellPadData *data)
 
         blend_canvas();
     }
-    else // default
+    else // default, blend + starfield
     {
         draw_background(); // alpha-blended background
 
@@ -207,7 +208,7 @@ static void draw_frame(CellPadData *data)
         }
 
         // print menu lines
-        if(view == 3)  // Browse GAMES view
+        if(view == 1)  // Browse GAMES view
         {
             if(i < gmc ) // && gmc > 0
             {
@@ -220,7 +221,6 @@ static void draw_frame(CellPadData *data)
                 if(!i) // or gmc < 1, (shortcut) only once on error
                 {
                     sprintf(tmp_ln, "(EE) 0x%p, %.2d", games, gmc);
-                    tmp_ln[strlen(tmp_ln)] = '\0';
                     tx = get_aligned_x(tmp_ln, CENTER);
                     print_text(tx, ty, tmp_ln);
                 }
@@ -271,7 +271,7 @@ static void draw_frame(CellPadData *data)
 
     // ...
 
-    if(view == 1)  // Dump pad data view
+    if(view == 2)  // Dump pad data view
     {
         ty = 180;
         uint8_t  x  = 0;
@@ -303,7 +303,7 @@ static void draw_frame(CellPadData *data)
         }
 
     }
-    else if(view == 2)  // Setup colors menu view
+    else if(view == 3)  // Setup colors menu view
     {
         uint32_t *tc = NULL;
         uint8_t x, g;  // grounds
@@ -361,7 +361,7 @@ static void draw_frame(CellPadData *data)
                 }
             }
         }
-    } // end (view == 2)
+    } // end (view == 3)
 
     // ...
 
@@ -474,7 +474,7 @@ static void do_updown_action(uint16_t curpad)
           || *value >  0)/* bound */{ *value -= step, flag = 1; }
 
         else // deal with scrolling lines
-        if(*value == 0 && view == 3
+        if(*value == 0 && view == 1
         && stride > 0) { stride--, flag = 1; }
     }
     else // & PAD_DOWN
@@ -483,7 +483,7 @@ static void do_updown_action(uint16_t curpad)
           || *value <  max)/* bound */{ *value += step, flag = 1; }
 
         else // deal with scrolling lines
-        if(*value == max && view == 3
+        if(*value == max && view == 1
         && stride < gmc - p->max_lines) { stride++, flag = 1; }
     }
 
@@ -503,7 +503,7 @@ static void do_updown_action(uint16_t curpad)
 ***********************************************************************/
 static void do_leftright_action(uint16_t curpad)
 {
-  if((view == 2)     // only on third view
+  if((view == 3)     // only on third view
   && (line < VIEWS)) // only for all color palettes
   {
       bool flag = 0;
@@ -531,21 +531,28 @@ static void do_menu_action(void)
 {
     switch(view)
     {
-      case 0:                    // main menu view
+      case 0:                      /// main menu view ///
         switch(line)
         {
-          case 0:                  // "1: Make a single beep"
-            buzzer(1);
+          case 0:                  // "1: Browse GAMES
+            if(!games)
+                games = ReadUserList(&gmc); // refresh list
+            if(games)
+            {
+                view = 1;          // change menu view
+                line = stride = 0; // on start entry
+                linb = 1;          // flag for icon loading
+            }
             break;
           case 1:                  // "2: Make a double beep"
             buzzer(2);
             break;
           case 2:                  // "3: Enter second menu view"
-            view = 1;              // change menu view
+            view = 2;              // change menu view
             line = 0;              // on start entry
             break;
           case 3:                  // "4: Enter third menu view"
-            view = 2;              // change menu view
+            view = 3;              // change menu view
             line = col = 0;        // on start entry, for colors
             break;
           case 4:                  // "5: Play trophy sound"
@@ -558,32 +565,28 @@ static void do_menu_action(void)
           case 6:                  // "7: Make screenshot with menu"
             do_screenshot_action();
             break;
-          case 7:                  // "8: Reset PS3"
-            delete_turnoff_flag();
-            stop_VSH_Menu();
-            sys_timer_sleep(1);
-            shutdown_reset(2);
-            break;
-          case 8:                  // "9: Shutdown PS3"
+          case 7:                  // "8: Shutdown PS3"
             delete_turnoff_flag();
             stop_VSH_Menu();
             sys_timer_sleep(1);
             shutdown_reset(1);
             break;
-          case 9: // Browse GAMES
-            if(!games)
-                games = ReadUserList(&gmc); // refresh list
-            if(games)
-            {
-                view = 3;          // change menu view
-                line = stride = 0; // on start entry
-                linb = 1;          // flag for icon loading
-            }
+          case 8:                  // "9: Reset PS3"
+            delete_turnoff_flag();
+            stop_VSH_Menu();
+            sys_timer_sleep(1);
+            shutdown_reset(2);
             break;
         }
         break;
 
-      case 1:                   // second menu view
+      case 1:                   /// Browse GAMES view ///
+        do_mount((games + line + stride)->path);
+        sys_timer_usleep(500 *1000); /* 500msec */
+        stop_VSH_Menu();
+        break;
+
+      case 2:                   /// second menu view ///
         switch(line)
         {
           case 0:               // 1: Start UDP debug"
@@ -614,30 +617,16 @@ static void do_menu_action(void)
         }
         break;
 
-      case 2:                   // third menu view
+      case 3:                   /// third menu view ///
         switch(line)
         {
-          case 0:               // "1: bg 0"
-            break;
-          case 1:               // "2: test string..."
+          default:              // "test string..."
             //...
             break;
-          case 2:               // "3: test string..."
-            //...
-            break;
-          case 3:               // "4: test string..."
-            //...
-            break;
-          case 4:               // "5: write config"
+          case VIEWS:           // "5: write config"
             store_palette((menu_palette_ctx*)&palette, sizeof(menu_palette_ctx) * VIEWS);
             break;
         }
-        break;
-
-      case 3:                   // Browse GAMES view
-        do_mount((games + line + stride)->path);
-        sys_timer_usleep(500 *1000); /* 500msec */
-        stop_VSH_Menu();
         break;
 
     }
@@ -649,14 +638,16 @@ static void do_menu_action(void)
 ***********************************************************************/
 static void do_back_action(void)
 {
-    if(view) view = line = col = 0;
-
-    if(view == 0
-    && line == 9)
+    if(view)
+        view = line = col = 0;
+    else
     {
-        do_umount();
-        sys_timer_usleep(500 *1000); /* 500msec */
-        stop_VSH_Menu();
+        if(line == 0)
+        {
+            do_umount();
+            sys_timer_usleep(500 *1000); /* 500msec */
+            stop_VSH_Menu();
+        }
     }
 }
 

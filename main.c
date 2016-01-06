@@ -190,6 +190,25 @@ static void draw_frame(CellPadData *data)
         #endif
     }
 
+
+    /* print headline string, coordinates in canvas */
+    switch(view)
+    {
+      case 1:
+        sprintf(tmp_ln, "listing %d folder GAMES on HDD0", gmc);  // a fixed title
+        break;
+      case 2:
+      case 3:
+        strcpy(tmp_ln, (char*)(entry_str[0][view] +3 /*strip leading number*/ ));
+        break;
+      default:
+        strcpy(tmp_ln, "PS3 VSH Menu");
+        break;
+    }
+    tx = get_aligned_x(tmp_ln, CENTER); // center over width
+    print_text(tx, BORD_D, tmp_ln);     // minimum border from top
+
+
     /* print all menu entries for view, and blink the current selected entry */
     for(i = 0; i < p->max_lines; i++)
     {
@@ -249,25 +268,6 @@ static void draw_frame(CellPadData *data)
         dbg_printf("%s\n", tmp_ln);
         #endif
     }
-
-    /* print headline string, coordinates in canvas */
-    switch(view)
-    {
-      case 1:
-      case 2:
-        strcpy(tmp_ln, (char*)(entry_str[0][view +1] +3 /*strip leading number*/ ));
-        break;
-
-      case 3:
-        sprintf(tmp_ln, "listing %d folder GAMES on HDD0", gmc);  // a fixed title
-        break;
-
-      default:
-        strcpy(tmp_ln, "PS3 VSH Menu");
-        break;
-    }
-    tx = get_aligned_x(tmp_ln, CENTER); // center over width
-    print_text(tx, BORD_D, tmp_ln);     // minimum border from top
 
     // ...
 
@@ -589,7 +589,7 @@ static void do_menu_action(void)
       case 2:                   /// second menu view ///
         switch(line)
         {
-          case 0:               // 1: Start UDP debug"
+          case 0:               // 1: test UDP debug"
             #ifdef DEBUG
             //dbg_fini();
             //dbg_init();
@@ -695,13 +695,13 @@ static void vsh_menu_thread(uint64_t arg)
                 {
                     // VSH Menu not running, start VSH Menu
                     case 0:
-                      view = line = col = 0;        // main view and start on first entry
+                      view = line = col = 0;      // main view and start on first entry
 
                       pause_RSX_rendering();
 
-                      create_heap(16);              // create VSH Menu heap memory from memory container 1("app")
+                      create_heap(16);            // create VSH Menu heap memory from memory container 1("app")
 
-                      init_graphic();               // initialize VSH Menu graphic
+                      init_graphic();             // initialize VSH Menu graphic
 
                       #ifdef HAVE_SYS_FONT
                       set_font(FONT_W, FONT_H, 1, FONT_D); // line-weight = 1 pxl, distance between chars)
@@ -709,11 +709,11 @@ static void vsh_menu_thread(uint64_t arg)
 
                       load_png_bitmap(0, "/dev_hdd0/tentacle.png"); // load an image
 
-                      start_stop_vsh_pad(0);                        // stop vsh pad
+                      start_stop_vsh_pad(0);      // stop vsh pad
 
-                      startm = clock(), tick = 0;                   // reset fps counters
+                      startm = clock(), tick = 0; // reset fps counters
 
-                      menu_running = 1;         // set menu_running
+                      menu_running = 1;           // set menu_running
 
                       break;
 

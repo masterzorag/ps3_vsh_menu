@@ -167,7 +167,7 @@ int32_t print_text(int32_t x, int32_t y, const char *str);
 
 
 // menu views
-typedef struct menu_palette_ctx
+typedef struct _menu_palette_ctx
 {
     uint32_t c[3];
     uint8_t  max_lines;       // (256 seems enough)

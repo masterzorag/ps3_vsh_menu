@@ -183,6 +183,23 @@ static void draw_frame(CellPadData *data)
     }
     else // default, blend + starfield
     {
+        #ifdef DEBUG
+        // hookup the first axis value and play with it...
+        int8_t  r  = (uint8_t)(data->button[20] - 0x200) /16;
+        uint8_t fr[4];
+
+        fr[0] = GET_A(p->c[0]), fr[1] = GET_R(p->c[0]),
+        fr[2] = GET_G(p->c[0]), fr[3] = GET_B(p->c[0]);
+
+        fr[0] += r; // update alpha
+        dbg_printf("fr: 0x%.2x %x\n", fr[0], r);
+
+        uint32_t tc = ARGB(fr[0], fr[1], fr[2], fr[3]);
+        dbg_printf("updt bg: 0x%.8x\n", tc);
+
+        set_background_color(tc); // update bg color
+        #endif
+
         draw_background(); // alpha-blended background
 
         #ifdef HAVE_STARFIELD
